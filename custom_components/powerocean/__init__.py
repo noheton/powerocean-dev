@@ -20,7 +20,7 @@ Functions:
 """
 
 from datetime import timedelta
-
+import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_DEVICE_ID,
@@ -30,12 +30,13 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import (
     ConfigEntryNotReady,
     HomeAssistantError,
     IntegrationError,
 )
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
@@ -183,6 +184,55 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Listener für Optionsänderungen
     entry.async_on_unload(entry.add_update_listener(update_listener))
 
+    # ── Service: set_tou_schedule ─────────────────────────────────────────────
+    # APK source: ACTION_W_CFG_TOU_STRATEGY / CFG_TOU_HOURS_STRATEGY_FIELD_NUMBER
+    # The TOU strategy is a single JSON blob; individual hours are not exposed as
+    # separate entities per APK analysis recommendation.
+    async def handle_set_tou_schedule(call: ServiceCall) -> None:
+        schedule_raw: str = call.data["schedule"]
+        try:
+            import json
+            schedule_obj = json.loads(schedule_raw)
+        except (ValueError, TypeError) as exc:
+            msg = f"Invalid TOU schedule JSON: {exc}"
+            raise HomeAssistantError(msg) from exc
+
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        if api_entry is None:
+            msg = "PowerOcean API not available"
+            raise HomeAssistantError(msg)
+
+        await api_entry.async_set_property({"cfgTouStrategy": schedule_obj})
+
+    # ── Service: set_grid_type ────────────────────────────────────────────────
+    # APK source: ACTION_W_CFG_GRID_TYPE / CFG_GRID_TYPE_FIELD_NUMBER
+    async def handle_set_grid_type(call: ServiceCall) -> None:
+        grid_type = int(call.data["grid_type"])
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        if api_entry is None:
+            msg = "PowerOcean API not available"
+            raise HomeAssistantError(msg)
+
+        await api_entry.async_set_property({"cfgGridType": grid_type})
+
+    if not hass.services.has_service(DOMAIN, "set_tou_schedule"):
+        hass.services.async_register(
+            DOMAIN,
+            "set_tou_schedule",
+            handle_set_tou_schedule,
+            schema=vol.Schema({vol.Required("schedule"): cv.string}),
+        )
+
+    if not hass.services.has_service(DOMAIN, "set_grid_type"):
+        hass.services.async_register(
+            DOMAIN,
+            "set_grid_type",
+            handle_set_grid_type,
+            schema=vol.Schema(
+                {vol.Required("grid_type"): vol.All(vol.Coerce(int), vol.In([0, 1]))}
+            ),
+        )
+
     return True
 
 
@@ -230,8 +280,14 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         LOGGER.warning("Failed to unload platforms for %s", entry.entry_id)
         return False
 
-    # Remove from hass.data
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+
+    # Remove domain-level services when the last entry is unloaded
+    if not hass.data.get(DOMAIN):
+        for service_name in ("set_tou_schedule", "set_grid_type"):
+            if hass.services.has_service(DOMAIN, service_name):
+                hass.services.async_remove(DOMAIN, service_name)
+
     return unload_ok
 
 

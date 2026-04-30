@@ -184,3 +184,33 @@ class EcoflowApi:
             async with session.get(url, headers=headers) as resp:
                 resp.raise_for_status()
                 return await resp.json()
+
+    async def async_set_property(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Write a device property via the EcoFlow consumer API.
+
+        Endpoint discovered in APK DEX strings: /iot-devices/device/setDeviceProperty.
+        Auth: bearer token from async_authorize().
+        Payload: {"sn": <device_sn>, "params": {<camelCase_field>: <value>}}
+
+        Raises:
+            EcoflowApiError: If the region has not been detected yet.
+            aiohttp.ClientResponseError: If the API returns a non-2xx status.
+
+        """
+        if not self.api_host:
+            msg = "Region not detected; cannot write property"
+            raise EcoflowApiError(msg)
+
+        session = await self._get_session()
+        url = f"https://{self.api_host}/iot-devices/device/setDeviceProperty"
+        headers = {
+            "authorization": f"Bearer {self.token}",
+            "product-type": self.variant,
+            "content-type": "application/json",
+        }
+        payload: dict[str, Any] = {"sn": self.sn, "params": params}
+
+        async with asyncio.timeout(10):
+            async with session.post(url, json=payload, headers=headers) as resp:
+                resp.raise_for_status()
+                return await resp.json()

@@ -17,9 +17,57 @@ USE_MOCKED_RESPONSE = False  # Set to True to use mocked responses for testing
 MOCKED_RESPONSE = (
     Path(__file__).parent / "tests" / "fixtures" / "response_modified.json"
 )
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+
+PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
+
 ATTR_PRODUCT_DESCRIPTION = "Product Description"
 ATTR_PRODUCT_SERIAL = "Vendor Product Serial"
+
+# ── EcoFlow consumer API write endpoint (APK analysis: /iot-devices/device/setDeviceProperty) ──
+API_WRITE_ENDPOINT = "/iot-devices/device/setDeviceProperty"
+
+# ── Write-command parameter keys (camelCase proto field names from APK _FIELD_NUMBER analysis) ──
+# Backup / energy management
+PARAM_BACKUP_RESERVE_SOC = "cfgBackupReverseSoc"
+PARAM_BACKUP_SOC_VPP = "cfgBackupSocVpp"
+PARAM_BACKUP_BOX_MODE = "cfgBackupBoxMode"
+
+# Grid
+PARAM_GRID_CHARGE_ENABLE = "cfgGridChargeToBatteryEnable"
+PARAM_GRID_IN_PWR_LIMIT = "cfgSysGridInPwrLimit"
+
+# SP (SmartPower / EV charger)
+PARAM_CHARGER_ENABLE = "cfgSpChargerChgOpen"
+PARAM_CHARGER_MODE = "cfgSpChargerChgMode"
+PARAM_CHARGER_POWER_LIMIT = "cfgSpChargerChgPowLimit"
+PARAM_FAST_CHG_MAX_SOC = "cfgSpFastChgMaxSoc"
+
+# System lifecycle (active commands — trigger once)
+PARAM_SYS_PAUSE = "cfgSysPause"
+PARAM_SYS_RESUME = "cfgSysResume"
+PARAM_SYS_REBOOT = "activeSysReboot"
+PARAM_SYS_SELFCHECK = "activeSysSelfcheck"
+
+# ── Keys that must be represented as binary_sensor (not regular sensor) ──
+# Sourced from EMS_HEARTBEAT and DEFAULT reports that contain boolean states/error flags
+BINARY_SENSOR_KEYS: frozenset[str] = frozenset(
+    {
+        "online",
+        "epoSwitchState",
+        "autoDetectStartPowerEn",
+        "isPvToInvDirectly",
+        "emsBpSelfcheckState",
+        "emsMpptSelfcheckState",
+        "emsMpptRunState",
+    }
+)
 
 
 class PowerOceanModel(StrEnum):
