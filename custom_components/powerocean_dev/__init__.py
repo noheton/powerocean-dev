@@ -90,9 +90,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     except HomeAssistantError as err:
         LOGGER.error("Home Assistant error during PowerOcean setup: %s", err)
         return False
-    except Exception:  # optional fallback, nur loggen
+    except Exception:
         LOGGER.exception("Unexpected error loading PowerOcean integration")
-        raise  # Fehler weiterwerfen, damit HA korrekt reagiert
+        raise
 
     return True
 
@@ -102,7 +102,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     options = dict(entry.options)
     updated = False
 
-    # Migration fehlender Optionen
+    # Back-fill options that were missing from older config entries
     if CONF_SCAN_INTERVAL not in options:
         options[CONF_SCAN_INTERVAL] = entry.data.get("options", {}).get(
             "scan_interval", DEFAULT_SCAN_INTERVAL
@@ -119,7 +119,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(entry, options=options)
         LOGGER.debug("Migrated missing options for %s: %s", entry.title, options)
 
-    # --- EcoFlow API initialisieren ---
+    # Validate required config keys
     device_id = entry.data.get(CONF_DEVICE_ID)
     model_id = entry.data.get(CONF_MODEL_ID)
     if not device_id or not model_id:
@@ -134,23 +134,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         model_id,
     )
 
-    # --- Authentifizieren ---
+    # Authenticate against the EcoFlow cloud
     try:
         await api.async_authorize()
     except ConfigEntryNotReady:
-        # Netzwerkproblem → Setup wird retryt
+        # Transient network error — HA will retry automatically
         raise
     except IntegrationError as e:
-        # Auth-Fehler oder unerwartete API-Probleme → Setup schlägt fehl
+        # Bad credentials or unexpected API error — fail fast, no retry
         LOGGER.error("Failed to authenticate EcoFlow device %s: %s", entry.title, e)
         return False
 
-    # --- Struktur & Parser ---
+    # Parse device structure (static metadata — run once at setup)
     raw = await api.fetch_raw()
     parser = EcoflowParser(variant=api.variant, sn=api.sn)
     endpoints = parser.parse_structure(raw)
 
-    # --- DataUpdateCoordinator ---
+    # Create the coordinator and perform the first polling refresh
     scan_interval = timedelta(
         seconds=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     )
@@ -165,7 +165,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "endpoints": endpoints,
     }
 
-    # --- Sensor-Plattformen laden ---
+    # Forward setup to all registered platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     model_name = MODEL_NAME_MAP[PowerOceanModel(model_id)]
@@ -181,7 +181,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         configuration_url="https://user-portal.ecoflow.com/",
     )
 
-    # Listener für Optionsänderungen
+    # Reload the entry when the user updates options (e.g. polling interval)
     entry.async_on_unload(entry.add_update_listener(update_listener))
 
     # ── Service: set_tou_schedule ─────────────────────────────────────────────
@@ -256,7 +256,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 }
             )
 
-            # Optionen auslagern
+            # Move friendly_name into options (new structure)
             options.setdefault(
                 CONF_FRIENDLY_NAME,
                 old.get(CONF_FRIENDLY_NAME, DEFAULT_NAME),

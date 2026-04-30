@@ -248,7 +248,7 @@ class BoxSchema(TypedDict):
     model: str
     name_prefix: str
     paths: dict[str, list[str]] | None
-    sensors: set[str]  # 🔑 jetzt als Set für schnelle Lookup
+    sensors: set[str]  # Set for O(1) membership checks during parsing
 
 
 BOX_SCHEMAS: dict[str, BoxSchema] = {
@@ -328,16 +328,16 @@ def _join_id(*parts: str) -> str:
 
 def clean_zero(v: float, eps: float = 0.05) -> float:
     """
-    Setzt kleine Werte auf exakt 0, um Floating-Point Artefakte zu vermeiden.
+    Clamp near-zero values to exactly 0.0 to eliminate floating-point artefacts.
 
     Args:
-        v (float): Der zu prüfende Wert.
-        eps (float, optional): Die Schwelle unterhalb derer der Wert auf 0 gesetzt wird.
+        v: The value to check.
+        eps: Threshold below which abs(v) is treated as zero.
 
     Returns:
-        float: 0.0, wenn abs(v) < eps, sonst der Originalwert v.
+        0.0 if abs(v) < eps, otherwise the original value.
 
-    Beispiel:
+    Examples:
         >>> clean_zero(0.03)
         0.0
         >>> clean_zero(-0.02)

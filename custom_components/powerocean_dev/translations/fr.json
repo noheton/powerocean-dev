@@ -131,7 +131,8 @@
             "backup_reserve_soc":           { "name": "SoC réserve de secours" },
             "fast_chg_max_soc":             { "name": "Limite supérieure charge rapide" },
             "charger_power_limit":          { "name": "Limite puissance chargeur" },
-            "grid_in_pwr_limit":            { "name": "Limite puissance import réseau" }
+            "grid_in_pwr_limit":            { "name": "Limite puissance import réseau" },
+            "charger_amp_limit":            { "name": "Limite courant de charge" }
         },
         "select": {
             "charger_mode": {
@@ -154,7 +155,9 @@
         "switch": {
             "charger_enable":               { "name": "Borne de recharge VE" },
             "grid_charge_enable":           { "name": "Charge réseau" },
-            "system_pause":                 { "name": "Pause système" }
+            "system_pause":                 { "name": "Pause système" },
+            "battery_heat":                 { "name": "Chauffage batterie" },
+            "charger_auto_chg":             { "name": "Charge automatique VE" }
         }
     }
 }

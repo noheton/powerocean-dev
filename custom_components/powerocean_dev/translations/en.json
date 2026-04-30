@@ -131,7 +131,8 @@
             "backup_reserve_soc":           { "name": "Backup Reserve SoC" },
             "fast_chg_max_soc":             { "name": "Fast Charge Upper Limit" },
             "charger_power_limit":          { "name": "Charger Power Limit" },
-            "grid_in_pwr_limit":            { "name": "Grid Import Power Limit" }
+            "grid_in_pwr_limit":            { "name": "Grid Import Power Limit" },
+            "charger_amp_limit":            { "name": "Charger Current Limit" }
         },
         "select": {
             "charger_mode": {
@@ -154,7 +155,9 @@
         "switch": {
             "charger_enable":               { "name": "EV Charger" },
             "grid_charge_enable":           { "name": "Grid Charging" },
-            "system_pause":                 { "name": "System Pause" }
+            "system_pause":                 { "name": "System Pause" },
+            "battery_heat":                 { "name": "Battery Heating" },
+            "charger_auto_chg":             { "name": "Automatic EV Charging" }
         }
     },
     "services": {

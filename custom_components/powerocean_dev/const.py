@@ -47,7 +47,13 @@ PARAM_GRID_IN_PWR_LIMIT = "cfgSysGridInPwrLimit"
 PARAM_CHARGER_ENABLE = "cfgSpChargerChgOpen"
 PARAM_CHARGER_MODE = "cfgSpChargerChgMode"
 PARAM_CHARGER_POWER_LIMIT = "cfgSpChargerChgPowLimit"
+PARAM_CHARGER_AMP_LIMIT = "cfgSpChargerDevBattChgAmpLimit"
+PARAM_CHARGER_AUTO_CHG = "cfgSpChargerAutoChgOpen"
 PARAM_FAST_CHG_MAX_SOC = "cfgSpFastChgMaxSoc"
+
+# BMS (Battery Management System)
+# ACTION_W_CFG_BMS_BATTERY_HEAT — enable/disable battery cell heating for cold climates
+PARAM_BATTERY_HEAT = "cfgBmsBatteryHeat"
 
 # System lifecycle (active commands — trigger once)
 PARAM_SYS_PAUSE = "cfgSysPause"

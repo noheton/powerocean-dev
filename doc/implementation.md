@@ -20,10 +20,11 @@
 | `sensor.py` | Refactored | `SensorEntityDescription` registry for 60+ known keys; binary-key filter; proper `state_class` everywhere |
 | `binary_sensor.py` | **New** | 7 boolean states/error flags from EMS and DEFAULT reports |
 | `button.py` | **New** | `system_reboot`, `system_selfcheck` momentary actions |
-| `number.py` | **New** | 4 numeric write entities: backup reserve SoC, fast-charge cap, charger power limit, grid import limit |
+| `number.py` | **New** (pass 1) | 4 numeric write entities: backup reserve SoC, fast-charge cap, charger power limit, grid import limit |
 | `select.py` | **New** | 2 mode selects: charger mode, backup mode |
-| `switch.py` | **New** | 3 on/off switches: EV charger enable, grid charging, system pause |
-| `services.yaml` | **New** | `set_tou_schedule`, `set_grid_type` domain services |
+| `switch.py` | Updated | 5 on/off switches: EV charger enable, grid charging, system pause, **battery heating**, **auto EV charging** |
+| `number.py` | Updated | 5 numeric write entities: backup reserve SoC, fast-charge cap, charger power limit, grid import limit, **charger current limit** |
+| `services.yaml` | Updated | `set_tou_schedule`, `set_grid_type` — fixed `integration:` target from `powerocean` → `powerocean_dev` |
 | `strings.json` | Updated | Added `entity.*.*.*` translation tree for all 6 platforms + services |
 | `translations/en.json` | Updated | Full English entity names + service descriptions |
 | `translations/de.json` | Updated | Full German entity names |
@@ -212,4 +213,65 @@ German Voice Assist will resolve to **Ladezustand der Batterie** via `de.json`.
 
 4. **Region detection for write** — `_detect_region` only probes EU/US; Asia/CN hosts
    (`api-a`, `api-cn`) are not tried.  Add them if deployments outside EU/US report
+   write failures.
+
+---
+
+## 7. Refactor Pass 2 — 2026-04-30
+
+### 7.1 New Write Entities Added
+
+APK analysis pass 2 (`raw_action_w_powerocean.txt`) identified three additional write
+surfaces not covered in pass 1:
+
+| Entity key | Platform | APK action | Proto camelCase key | Equipment relevance |
+|---|---|---|---|---|
+| `battery_heat` | `switch` | `ACTION_W_CFG_BMS_BATTERY_HEAT` | `cfgBmsBatteryHeat` | Critical for 2× 5 kWh batteries in German winter (< 0 °C reduces charge acceptance) |
+| `charger_auto_chg` | `switch` | `ACTION_W_CFG_SP_CHARGER_AUTO_CHG_OPEN` | `cfgSpChargerAutoChgOpen` | Enables PowerPulse smart TOU / solar-priority auto-charging |
+| `charger_amp_limit` | `number` | `ACTION_W_CFG_SP_CHARGER_DEV_BATT_CHG_AMP_LIMIT` | `cfgSpChargerDevBattChgAmpLimit` | IEC 61851 AC charging current cap (6–32 A) for 11 kW PowerPulse |
+
+All three entities attach to the main inverter device (`HJ37ZDH5ZG5W0109`) because
+write commands route through the inverter API, not directly to the sub-device.
+
+### 7.2 services.yaml Domain Fix
+
+`target: device: integration:` was referencing `powerocean` (original domain) instead
+of `powerocean_dev` (current domain). Fixed in both `set_tou_schedule` and
+`set_grid_type` service definitions.
+
+### 7.3 Energy-Flow Interpolation Logging
+
+`parser.py._handle_ems_heartbeat_mode()` now emits targeted `LOGGER.warning()` calls
+when either `pcsMeterPower` or `emsBpPower` is absent from the EMS heartbeat response.
+These two fields are the sole inputs for the eight derived energy-flow sensors
+(`housePower`, `gridPower`, `gridToBattery`, etc.). When absent, the derived values are
+silently zero — the warnings make this visible in HA logs and reference the specific
+APK field name to aid debugging.
+
+Additionally, a `LOGGER.warning()` fires when the computed house consumption would be
+negative (indicating a `pcsMeterPower` sign-convention mismatch with the APK analysis).
+
+`LOGGER.debug()` logs emit the raw inputs and computed outputs for each EMS heartbeat
+cycle, enabling detailed trace-level analysis without noise in production.
+
+### 7.4 Code Quality — German Comments Removed
+
+All German-language code comments and docstrings across all Python modules have been
+translated to English, including:
+- `coordinator.py` — docstring `_async_update_data`
+- `__init__.py` — inline comments in `async_setup_entry`, `async_migrate_entry`
+- `parser.py` — 6 inline comments
+- `utils.py` — `clean_zero` docstring + `BoxSchema.sensors` comment
+- `config_flow.py` — 5 method docstrings and inline comments
+
+### 7.5 Translation Updates
+
+`strings.json`, `translations/en.json`, `translations/de.json`, `translations/fr.json`
+each received entries for the 3 new entities:
+
+| Key | EN | DE | FR |
+|---|---|---|---|
+| `switch.battery_heat` | Battery Heating | Batterieheizung | Chauffage batterie |
+| `switch.charger_auto_chg` | Automatic EV Charging | Automatisches Laden | Charge automatique VE |
+| `number.charger_amp_limit` | Charger Current Limit | Ladestrom Limit | Limite courant de charge |
    write failures.

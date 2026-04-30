@@ -131,7 +131,8 @@
             "backup_reserve_soc":           { "name": "Backup-Reserve Ladezustand" },
             "fast_chg_max_soc":             { "name": "Schnellladen Obergrenze" },
             "charger_power_limit":          { "name": "Ladebox Leistungslimit" },
-            "grid_in_pwr_limit":            { "name": "Netzbezug Leistungslimit" }
+            "grid_in_pwr_limit":            { "name": "Netzbezug Leistungslimit" },
+            "charger_amp_limit":            { "name": "Ladestrom Limit" }
         },
         "select": {
             "charger_mode": {
@@ -154,7 +155,9 @@
         "switch": {
             "charger_enable":               { "name": "Ladebox" },
             "grid_charge_enable":           { "name": "Netzladung" },
-            "system_pause":                 { "name": "System pausieren" }
+            "system_pause":                 { "name": "System pausieren" },
+            "battery_heat":                 { "name": "Batterieheizung" },
+            "charger_auto_chg":             { "name": "Automatisches Laden" }
         }
     }
 }

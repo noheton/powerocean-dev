@@ -236,7 +236,7 @@ class EcoflowParser:
         for box_type, schema in BOX_SCHEMAS.items():
             detect_fn = schema.get("detect")
             if not callable(detect_fn):
-                continue  # Kein detect-Feld, überspringen
+                continue  # No detect callable — skip this schema
             try:
                 if detect_fn(payload):
                     return box_type, schema
@@ -321,7 +321,7 @@ class EcoflowParser:
         payload: dict,
     ) -> tuple[str, DeviceInfo]:
         """Resolve serial number and DeviceInfo for non-boxed reports."""
-        # bekannte SN-Felder (Reihenfolge = Priorität)
+        # Known SN fields in priority order
         sn_keys = ("evSn", "hrSn")
 
         device_sn = self.sn_inverter
@@ -427,16 +427,15 @@ class EcoflowParser:
         if not isinstance(d, dict):
             d = {}  # sicherstellen, dass wir ein dict haben
 
-        # --- EMS_CHANGE_REPORT + EMS_STATE_CHANGE_REPORT zusammenführen ---
+        # Merge EMS_CHANGE_REPORT and EMS_STATE_CHANGE_REPORT into a single dict
         if report == ReportMode.EMS_CHANGE.value:
-            # Keys für den "neuen" Report finden
             ems_state_keys = [
                 k for k in response if k.endswith(ReportMode.EMS_STATE_CHANGE.value)
             ]
             for ems_key in ems_state_keys:
                 extra_data = response.get(ems_key)
                 if isinstance(extra_data, dict):
-                    # Keys behalten, die im REPORT_DATAPOINTS[EMS_CHANGE] definiert sind
+                    # Only retain keys declared in REPORT_DATAPOINTS[EMS_CHANGE]
                     for k in REPORT_DATAPOINTS[ReportMode.EMS_CHANGE.value]:
                         if k in extra_data:
                             d[k] = extra_data[k]
@@ -624,58 +623,100 @@ class EcoflowParser:
 
             # ------------------------------
             # Energy flows: grid, battery, solar, house
+            # APK sources: pcsMeterPower (EMS_HEARTBEAT), emsBpPower (EMS_HEARTBEAT)
+            # Both fields default to 0 when absent from the response.
+            # If either is missing, the derived flow sensors are INTERPOLATED from
+            # incomplete data — a protocol deviation warning is emitted.
             # ------------------------------
 
             solar = max(float(total_power), 0.0)
 
-            # grid +- Werte in "pcsMeterPower", positiv = Import, negativ = Export
-            grid = float(d.get("pcsMeterPower", 0))
+            # pcsMeterPower: signed grid power; positive = import, negative = export
+            raw_grid = d.get("pcsMeterPower")
+            grid = float(raw_grid) if raw_grid is not None else 0.0
+            if raw_grid is None:
+                LOGGER.warning(
+                    "[%s] EMS heartbeat missing 'pcsMeterPower' — "
+                    "energy-flow sensors (gridPower, gridToHouse, gridToBattery) "
+                    "are interpolated as 0 W.  "
+                    "Verify meter wiring or firmware (APK: EMS_HEARTBEAT_FIELD pcsMeterPower).",
+                    self.sn_inverter,
+                )
 
-            # battery +- Werte in "emsBpPower", positiv = Ladung, negativ = Entladung
-            battery = float(d.get("emsBpPower", 0))
+            # emsBpPower: signed battery power; positive = charge, negative = discharge
+            raw_battery = d.get("emsBpPower")
+            battery = float(raw_battery) if raw_battery is not None else 0.0
+            if raw_battery is None:
+                LOGGER.warning(
+                    "[%s] EMS heartbeat missing 'emsBpPower' — "
+                    "battery-flow sensors (batteryToHouse, solarToBattery, gridToBattery) "
+                    "are interpolated as 0 W.  "
+                    "Check BMS communication (APK: EMS_HEARTBEAT_FIELD emsBpPower).",
+                    self.sn_inverter,
+                )
 
-            # ------------------------------
-            # Vorzeichen normalisieren
-            # ------------------------------
+            LOGGER.debug(
+                "[%s] Energy flow inputs — solar=%.1f W, grid=%.1f W, battery=%.1f W",
+                self.sn_inverter,
+                solar,
+                grid,
+                battery,
+            )
+
+            # Sign normalisation
             grid_import = max(grid, 0.0)
-            grid_export = max(-grid, 0.0)
-
             battery_charge = max(battery, 0.0)
             battery_discharge = max(-battery, 0.0)
 
-            # ------------------------------
-            # Hausverbrauch (physikalische Bilanz)
-            # ------------------------------
-            house_consumption = solar + grid + battery_discharge - battery_charge
-            house_consumption = max(house_consumption, 0.0)
+            # House consumption (physical energy balance)
+            house_consumption_raw = solar + grid + battery_discharge - battery_charge
+            if house_consumption_raw < -0.5:
+                # A significantly negative house value indicates a data inconsistency
+                # (e.g., meter sign convention mismatch or stale sensor values).
+                LOGGER.warning(
+                    "[%s] Computed house consumption is %.1f W (negative) — "
+                    "clamping to 0.  This may indicate a pcsMeterPower sign convention "
+                    "mismatch with the APK analysis (expected: positive = import).  "
+                    "solar=%.1f W, grid=%.1f W, battery=%.1f W",
+                    self.sn_inverter,
+                    house_consumption_raw,
+                    solar,
+                    grid,
+                    battery,
+                )
+            house_consumption = max(house_consumption_raw, 0.0)
 
-            # ------------------------------
-            # SOLAR-Verteilung
-            # ------------------------------
+            # Solar distribution
             solar_to_house = min(solar, house_consumption)
-
             solar_surplus = solar - solar_to_house
-
             solar_to_battery = min(solar_surplus, battery_charge)
-
             solar_to_grid = solar_surplus - solar_to_battery
 
-            # ------------------------------
-            # BATTERIE-Flüsse
-            # ------------------------------
+            # Battery flows
             battery_to_house = max(battery_discharge, 0.0)
-
             grid_to_battery = battery_charge - solar_to_battery
 
-            # ------------------------------
-            # NETZ-Flüsse
-            # ------------------------------
+            # Grid flows
             grid_to_house = grid_import - grid_to_battery
 
-            # Numerische Sicherheit
+            # Numerical safety clamps
             grid_to_house = max(grid_to_house, 0.0)
             grid_to_battery = max(grid_to_battery, 0.0)
             solar_to_grid = max(solar_to_grid, 0.0)
+
+            LOGGER.debug(
+                "[%s] Energy flow outputs — house=%.1f W, gridToHouse=%.1f W, "
+                "gridToBattery=%.1f W, solarToHouse=%.1f W, solarToBattery=%.1f W, "
+                "solarToGrid=%.1f W, batteryToHouse=%.1f W",
+                self.sn_inverter,
+                house_consumption,
+                grid_to_house,
+                grid_to_battery,
+                solar_to_house,
+                solar_to_battery,
+                solar_to_grid,
+                battery_to_house,
+            )
 
             # ------------------------------
             # Sensorliste
@@ -792,7 +833,7 @@ class EcoflowParser:
         sens_select: list,
         collector: ReportCollector,
     ) -> None:
-        # spezielle Behandlung für 'data' Report
+        # The DEFAULT 'data' report has no prefix in unique IDs
         report_id = "" if report == ReportMode.DEFAULT.value else f"{report}"
         device_sn, device_info = self._resolve_device_info(d)
 
@@ -820,7 +861,7 @@ class EcoflowParser:
         collector: ReportCollector,
     ) -> None:
         """Handle for RE307_EDEV_SYS_REPORT."""
-        # SN über Deep Search holen
+        # Locate the device SN via recursive deep search
         device_sn = self._deep_get_by_key(d, "devSn")
 
         if not device_sn:
@@ -833,7 +874,7 @@ class EcoflowParser:
             via_sn=self.sn_inverter,
         )
 
-        # sens_select generisch auflösen
+        # Resolve each declared sensor key from the nested response
         for key in sens_select:
             value = device_sn if key == "devSn" else self._deep_get_by_key(d, key)
 

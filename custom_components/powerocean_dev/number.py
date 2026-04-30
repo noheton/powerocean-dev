@@ -19,7 +19,12 @@ from homeassistant.components.number import (
     NumberMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfPower
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfElectricCurrent,
+    UnitOfPower,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -28,6 +33,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     DOMAIN,
     PARAM_BACKUP_RESERVE_SOC,
+    PARAM_CHARGER_AMP_LIMIT,
     PARAM_CHARGER_POWER_LIMIT,
     PARAM_FAST_CHG_MAX_SOC,
     PARAM_GRID_IN_PWR_LIMIT,
@@ -102,6 +108,23 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
         icon="mdi:transmission-tower-import",
         mode=NumberMode.BOX,
         param_key=PARAM_GRID_IN_PWR_LIMIT,
+    ),
+    # ── PowerPulse device-battery charge amp limit ───────────────────────────
+    # ACTION_W_CFG_SP_CHARGER_DEV_BATT_CHG_AMP_LIMIT
+    # Sets the maximum AC charging current (A) for the 11 kW PowerPulse.
+    # Range 6–32 A matches IEC 61851 Mode 2/3 AC charging standards.
+    PowerOceanNumberDescription(
+        key="charger_amp_limit",
+        translation_key="charger_amp_limit",
+        native_min_value=6,
+        native_max_value=32,
+        native_step=1,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=NumberDeviceClass.CURRENT,
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:current-ac",
+        mode=NumberMode.BOX,
+        param_key=PARAM_CHARGER_AMP_LIMIT,
     ),
 ]
 

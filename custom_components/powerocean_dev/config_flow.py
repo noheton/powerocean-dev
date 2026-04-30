@@ -133,7 +133,7 @@ class PowerOceanConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 2
 
     def __init__(self) -> None:
-        """Instanzvariablen für den Flow-Verlauf."""
+        """Initialize flow instance variables."""
         self._cloud_data: dict[str, Any] = {}
 
     async def async_step_user(
@@ -147,15 +147,15 @@ class PowerOceanConfigFlow(ConfigFlow, domain=DOMAIN):
                 # 1. Validierung
                 await validate_input_for_device(self.hass, user_input)
 
-                # 2. Unique ID prüfen
+                # Ensure this device is not already configured
                 unique_id = f"PowerOcean {user_input[CONF_DEVICE_ID]}"
                 await self.async_set_unique_id(unique_id)
                 self._abort_if_unique_id_configured()
 
-                # 3. Daten für Schritt 2 zwischenspeichern
+                # Cache credentials for step 2
                 self._cloud_data = user_input
 
-                # 4. Weiter zu Schritt 2 (kein return async_create_entry!)
+                # Proceed to step 2 without creating the entry yet
                 return await self.async_step_device_options()
             except HomeAssistantError:
                 errors["base"] = "cannot_connect"
@@ -167,7 +167,7 @@ class PowerOceanConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_device_options(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Schritt 2: Zusätzliche Optionen abfragen."""
+        """Step 2: Collect optional device settings (friendly name, scan interval)."""
         errors = {}
         if user_input is not None:
             model_name = MODEL_NAME_MAP[
@@ -233,7 +233,7 @@ class PowerOceanConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     def _get_reconfigure_schema(self, entry: ConfigEntry) -> vol.Schema:
-        """Hilfsfunktion, um Schema für Reconfigure zu erstellen."""
+        """Build the voluptuous schema for the reconfigure step."""
         return vol.Schema(
             {
                 vol.Required(
@@ -294,10 +294,9 @@ class PowerOceanOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         """Erster Schritt des Options Flows."""
         if user_input is not None:
-            # Erzeugt/aktualisiert das 'options' Dictionary im ConfigEntry
+            # Persist the updated options into the ConfigEntry
             return self.async_create_entry(title="", data=user_input)
 
-        # Zugriff auf self.config_entry ist hier direkt möglich
         options = self.config_entry.options
 
         return self.async_show_form(

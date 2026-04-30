@@ -22,6 +22,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DOMAIN,
+    PARAM_BATTERY_HEAT,
+    PARAM_CHARGER_AUTO_CHG,
     PARAM_CHARGER_ENABLE,
     PARAM_GRID_CHARGE_ENABLE,
     PARAM_SYS_PAUSE,
@@ -77,6 +79,29 @@ SWITCH_DESCRIPTIONS: list[PowerOceanSwitchDescription] = [
         icon="mdi:pause-circle-outline",
         on_params={PARAM_SYS_PAUSE: 1},
         off_params={PARAM_SYS_RESUME: 1},
+    ),
+    # ── Battery cell heating ──────────────────────────────────────────────────
+    # ACTION_W_CFG_BMS_BATTERY_HEAT — enables the integrated cell heater in the
+    # 5 kWh battery modules.  Critical for cold-climate operation to maintain
+    # charge acceptance and prevent degradation below 0 °C.
+    PowerOceanSwitchDescription(
+        key="battery_heat",
+        translation_key="battery_heat",
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:heat-wave",
+        on_params={PARAM_BATTERY_HEAT: 1},
+        off_params={PARAM_BATTERY_HEAT: 0},
+    ),
+    # ── PowerPulse automatic charging ────────────────────────────────────────
+    # ACTION_W_CFG_SP_CHARGER_AUTO_CHG_OPEN — lets the PowerPulse decide the
+    # optimal charge window based on solar availability and TOU tariff.
+    PowerOceanSwitchDescription(
+        key="charger_auto_chg",
+        translation_key="charger_auto_chg",
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:ev-station",
+        on_params={PARAM_CHARGER_AUTO_CHG: 1},
+        off_params={PARAM_CHARGER_AUTO_CHG: 0},
     ),
 ]
 
