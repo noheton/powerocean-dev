@@ -1,0 +1,51 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Bitte geben Sie unten Ihre PowerOcean-Geräteinformationen ein:",
+                "data": {
+                    "device_id": "Seriennummer des Wechselrichters (wie in der EcoFlow-App angezeigt)",
+                    "email": "E-Mail-Adresse",
+                    "password": "Passwort",
+                    "model_id": "PowerOcean-Modell"
+                }
+            },
+            "device_options": {
+                "description": "Geräteoptionen konfigurieren:",
+                "data": {
+                    "friendly_name": "Gerätename",
+                    "scan_interval": "Aktualisierungsintervall (in Sekunden)"
+                }
+            },
+            "reconfigure": {
+                "description": "PowerOcean-Zugangsdaten aktualisieren.",
+                "data": {
+                    "device_id": "Seriennummer des Wechselrichters (wie in der EcoFlow-App angezeigt)",
+                    "email": "E-Mail-Adresse",
+                    "password": "Passwort",
+                    "model_id": "PowerOcean-Modell"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Verbindung fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.",
+            "invalid_auth": "Ungültige Authentifizierung",
+            "unknown": "Unerwarteter Fehler"
+        },
+        "abort": {
+            "already_configured": "Dieses Gerät ist bereits konfiguriert.",
+            "reconfiguration_completed": "Gerätekonfiguration wurde aktualisiert. Die Integration wird neu geladen."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "description": "Einstellungen der PowerOcean-Integration anpassen.",
+                "data": {
+                    "friendly_name": "Gerätename",
+                    "scan_interval": "Aktualisierungsintervall (in Sekunden)"
+                }
+            }
+        }
+    }
+}

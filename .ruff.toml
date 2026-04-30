@@ -1,0 +1,51 @@
+# The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
+
+target-version = "py313"
+
+
+[lint]
+select = [
+    "ALL",
+]
+
+ignore = [
+    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+    "D203", # no-blank-line-before-class (incompatible with formatter)
+    "D212", # multi-line-summary-first-line (incompatible with formatter)
+    "COM812", # incompatible with formatter
+    "ISC001", # incompatible with formatter
+    "EXE002",
+]
+
+[lint.per-file-ignores]
+"custom_components/powerocean/__init__.py" = ["PLR2004", "ARG001"]
+"custom_components/powerocean/config_flow.py" = ["ARG004"]
+"custom_components/powerocean/parser.py" = ["PLR0913", "F841"]
+"custom_components/powerocean/types.py" = ["UP040"]
+"custom_components/powerocean/collector.py" = ["PLR0913", "ARG002"]
+"custom_components/powerocean/tests/*.py" = [
+    "S101", # assert allowed in tests
+    "PLR2004", # magic values
+    "F841", # unused variables
+    "ANN201", # missing return type
+    "ANN001",
+    "D103",
+    "ARG001",
+]
+"custom_components/powerocean/tests/**/*.py" = [
+    "S101", # assert allowed in tests
+    "PLR2004", # magic values
+    "F841", # unused variables
+    "ANN201", # missing return type
+    "SLF001", # Private member accessed
+]
+"documentation/**/*.py" = ["ALL"]
+
+[lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[lint.pyupgrade]
+keep-runtime-typing = true
+
+[lint.mccabe]
+max-complexity = 25
