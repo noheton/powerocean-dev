@@ -28,6 +28,8 @@ from .api import (
     AuthenticationError,
     EcoflowApi,
     EcoflowApiError,
+    EcoflowOpenApi,
+    EcoflowOpenApiError,
 )
 from .const import (
     LOGGER,
@@ -142,6 +144,72 @@ class HAEcoflowApi(EcoflowApi):
             raise IntegrationError(msg)
 
         return response
+
+
+class HAEcoflowOpenApi(EcoflowOpenApi):
+    """
+    Home Assistant wrapper around EcoflowOpenApi.
+
+    Provides HA session integration and maps Open API errors to
+    ``IntegrationError`` for consistent HA error handling.
+    """
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        serialnumber: str,
+        access_key: str,
+        secret_key: str,
+    ) -> None:
+        """
+        Initialize the HA-aware EcoFlow Open Platform API client.
+
+        Args:
+            hass: Home Assistant instance.
+            serialnumber: Device serial number.
+            access_key: EcoFlow Open Platform access key.
+            secret_key: EcoFlow Open Platform secret key.
+
+        """
+        session = async_get_clientsession(hass)
+        super().__init__(
+            serialnumber=serialnumber,
+            access_key=access_key,
+            secret_key=secret_key,
+            session=session,
+        )
+
+    async def set_quota(self, params: dict) -> dict:
+        """
+        Write device parameters, mapping errors to HA IntegrationError.
+
+        Args:
+            params: Command parameters dict, e.g.
+                ``{"cmdSet": 32, "id": 66, "enabled": 1}``.
+
+        Raises:
+            IntegrationError: On API failure.
+
+        """
+        try:
+            return await super().set_quota(params)
+        except EcoflowOpenApiError as e:
+            msg = f"Failed to write device parameter: {e}"
+            raise IntegrationError(msg) from e
+
+    async def get_all_quotas(self) -> dict:
+        """
+        Fetch all device quotas, mapping errors to HA IntegrationError.
+
+        Raises:
+            IntegrationError: On API failure.
+
+        """
+        try:
+            return await super().get_all_quotas()
+        except EcoflowOpenApiError as e:
+            msg = f"Failed to fetch device quotas: {e}"
+            raise IntegrationError(msg) from e
 
 
 class ApiResponseError(Exception):

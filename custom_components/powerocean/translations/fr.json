@@ -7,7 +7,9 @@
                     "device_id": "Numéro de série de l'onduleur (tel qu'affiché dans l'application EcoFlow)",
                     "email": "Adresse e-mail",
                     "password": "Mot de passe",
-                    "model_id": "Modèle PowerOcean"
+                    "model_id": "Modèle PowerOcean",
+                    "access_key": "Clé d'accès EcoFlow Open API (optionnel, active les commandes d'écriture)",
+                    "secret_key": "Clé secrète EcoFlow Open API (optionnel, active les commandes d'écriture)"
                 }
             },
             "device_options": {
@@ -23,7 +25,9 @@
                     "device_id": "Numéro de série de l'onduleur (tel qu'affiché dans l'application EcoFlow)",
                     "email": "Adresse e-mail",
                     "password": "Mot de passe",
-                    "model_id": "Modèle PowerOcean"
+                    "model_id": "Modèle PowerOcean",
+                    "access_key": "Clé d'accès EcoFlow Open API (optionnel, active les commandes d'écriture)",
+                    "secret_key": "Clé secrète EcoFlow Open API (optionnel, active les commandes d'écriture)"
                 }
             }
         },

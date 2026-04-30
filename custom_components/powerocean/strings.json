@@ -7,7 +7,9 @@
           "device_id": "[%key:common::config_flow::data::device_id%]",
           "email": "[%key:common::config_flow::data::email%]",
           "password": "[%key:common::config_flow::data::password%]",
-          "model_id": "[%key:common::config_flow::data::model_id%]"
+          "model_id": "[%key:common::config_flow::data::model_id%]",
+          "access_key": "EcoFlow Open API Access Key (optional, enables write commands)",
+          "secret_key": "EcoFlow Open API Secret Key (optional, enables write commands)"
         }
       },
       "device_options": {
@@ -23,7 +25,9 @@
           "device_id": "[%key:common::config_flow::data::device_id%]",
           "email": "[%key:common::config_flow::data::email%]",
           "password": "[%key:common::config_flow::data::password%]",
-          "model_id": "[%key:common::config_flow::data::model_id%]"
+          "model_id": "[%key:common::config_flow::data::model_id%]",
+          "access_key": "EcoFlow Open API Access Key (optional, enables write commands)",
+          "secret_key": "EcoFlow Open API Secret Key (optional, enables write commands)"
         }
       }
     },

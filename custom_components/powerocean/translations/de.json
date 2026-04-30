@@ -7,7 +7,9 @@
                     "device_id": "Seriennummer des Wechselrichters (wie in der EcoFlow-App angezeigt)",
                     "email": "E-Mail-Adresse",
                     "password": "Passwort",
-                    "model_id": "PowerOcean-Modell"
+                    "model_id": "PowerOcean-Modell",
+                    "access_key": "EcoFlow Open API Access Key (optional, ermöglicht Schreibbefehle)",
+                    "secret_key": "EcoFlow Open API Secret Key (optional, ermöglicht Schreibbefehle)"
                 }
             },
             "device_options": {
@@ -23,7 +25,9 @@
                     "device_id": "Seriennummer des Wechselrichters (wie in der EcoFlow-App angezeigt)",
                     "email": "E-Mail-Adresse",
                     "password": "Passwort",
-                    "model_id": "PowerOcean-Modell"
+                    "model_id": "PowerOcean-Modell",
+                    "access_key": "EcoFlow Open API Access Key (optional, ermöglicht Schreibbefehle)",
+                    "secret_key": "EcoFlow Open API Secret Key (optional, ermöglicht Schreibbefehle)"
                 }
             }
         },

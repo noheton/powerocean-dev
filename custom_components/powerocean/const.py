@@ -18,6 +18,8 @@ MOCKED_RESPONSE = (
     Path(__file__).parent / "tests" / "fixtures" / "response_modified.json"
 )
 PLATFORMS: list[Platform] = [Platform.SENSOR]
+CONF_ACCESS_KEY = "access_key"
+CONF_SECRET_KEY = "secret_key"
 ATTR_PRODUCT_DESCRIPTION = "Product Description"
 ATTR_PRODUCT_SERIAL = "Vendor Product Serial"
 

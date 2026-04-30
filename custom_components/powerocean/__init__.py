@@ -41,6 +41,8 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
 from .const import (
+    CONF_ACCESS_KEY,
+    CONF_SECRET_KEY,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -50,7 +52,7 @@ from .const import (
     PowerOceanModel,
 )
 from .coordinator import PowerOceanCoordinator
-from .ecoflow import HAEcoflowApi
+from .ecoflow import HAEcoflowApi, HAEcoflowOpenApi
 from .parser import EcoflowParser
 
 
@@ -158,8 +160,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
 
+    # Initialize Open Platform API for write support when credentials are provided
+    open_api: HAEcoflowOpenApi | None = None
+    access_key = entry.data.get(CONF_ACCESS_KEY, "")
+    secret_key = entry.data.get(CONF_SECRET_KEY, "")
+    if access_key and secret_key:
+        open_api = HAEcoflowOpenApi(hass, device_id, access_key, secret_key)
+        LOGGER.debug("EcoFlow Open Platform API enabled for %s", entry.title)
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "api": api,
+        "open_api": open_api,
         "coordinator": coordinator,
         "endpoints": endpoints,
     }

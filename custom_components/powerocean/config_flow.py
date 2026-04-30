@@ -37,6 +37,8 @@ from homeassistant.exceptions import HomeAssistantError, IntegrationError
 from homeassistant.helpers.selector import selector
 
 from .const import (
+    CONF_ACCESS_KEY,
+    CONF_SECRET_KEY,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -77,6 +79,8 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
                 }
             }
         ),
+        vol.Optional(CONF_ACCESS_KEY, default=""): str,
+        vol.Optional(CONF_SECRET_KEY, default=""): str,
     }
 )
 
@@ -256,6 +260,14 @@ class PowerOceanConfigFlow(ConfigFlow, domain=DOMAIN):
                         }
                     }
                 ),
+                vol.Optional(
+                    CONF_ACCESS_KEY,
+                    default=entry.data.get(CONF_ACCESS_KEY, ""),
+                ): str,
+                vol.Optional(
+                    CONF_SECRET_KEY,
+                    default=entry.data.get(CONF_SECRET_KEY, ""),
+                ): str,
             }
         )
 

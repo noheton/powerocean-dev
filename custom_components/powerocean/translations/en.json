@@ -7,7 +7,9 @@
                     "device_id": "Inverter serial number (as shown in the EcoFlow app)",
                     "email": "Email address",
                     "password": "Password",
-                    "model_id": "PowerOcean model"
+                    "model_id": "PowerOcean model",
+                    "access_key": "EcoFlow Open API Access Key (optional, enables write commands)",
+                    "secret_key": "EcoFlow Open API Secret Key (optional, enables write commands)"
                 }
             },
             "device_options": {
@@ -23,7 +25,9 @@
                     "device_id": "Inverter serial number (as shown in the EcoFlow app)",
                     "email": "Email address",
                     "password": "Password",
-                    "model_id": "PowerOcean model"
+                    "model_id": "PowerOcean model",
+                    "access_key": "EcoFlow Open API Access Key (optional, enables write commands)",
+                    "secret_key": "EcoFlow Open API Secret Key (optional, enables write commands)"
                 }
             }
         },
