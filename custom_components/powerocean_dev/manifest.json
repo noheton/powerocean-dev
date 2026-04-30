@@ -1,6 +1,6 @@
 {
-  "domain": "powerocean",
-  "name": "Ecoflow PowerOcean",
+  "domain": "powerocean_dev",
+  "name": "Ecoflow PowerOcean (dev)",
   "codeowners": [
     "@niltrip"
   ],

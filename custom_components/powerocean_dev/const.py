@@ -7,7 +7,7 @@ from pathlib import Path
 from homeassistant.const import Platform
 
 LOGGER: Logger = getLogger(__package__)
-DOMAIN = "powerocean"
+DOMAIN = "powerocean_dev"
 DEFAULT_SCAN_INTERVAL = 10
 DEFAULT_NAME = "PowerOcean"
 ISSUE_URL = "https://github.com/niltrip/powerocean/issues"
