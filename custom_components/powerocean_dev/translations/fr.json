@@ -119,7 +119,30 @@
             "module_sw_ver":                { "name": "Version firmware" },
             "system_name":                  { "name": "Nom du système" },
             "ems_bp_alive_num":             { "name": "Modules batterie actifs" },
-            "bp_online_sum":                { "name": "Batteries en ligne" }
+            "bp_online_sum":                { "name": "Batteries en ligne" },
+            "pp_charging_status":           { "name": "Statut de charge" },
+            "pp_work_mode":                 { "name": "Mode de charge (brut)" },
+            "pp_charge_target":             { "name": "Cible de charge" },
+            "pp_time_to_use_car":           { "name": "Temps avant utilisation du véhicule" },
+            "pp_allocated_power":           { "name": "Puissance allouée" },
+            "pp_feed_pwr_cap":              { "name": "Puissance max d'injection" },
+            "pp_soc_cur":                   { "name": "SoC véhicule" },
+            "pp_switch_bits":               { "name": "Drapeaux de contrôle" },
+            "pp_user_current_set":          { "name": "Paramètre courant utilisateur" },
+            "pp_current_ouput_max":         { "name": "Courant de sortie max" },
+            "pp_dev_sn":                    { "name": "Numéro de série appareil" },
+            "pp_start_state":               { "name": "État de démarrage" },
+            "pp_real_power_lock":           { "name": "Verrouillage puissance réelle" },
+            "pp_ref_power":                 { "name": "Puissance de référence" },
+            "pp_pcl_pwr_base":              { "name": "Base puissance PCL" },
+            "pp_ev_onoff_set":              { "name": "Borne marche/arrêt" },
+            "pp_ev_curr_set":               { "name": "Paramètre courant (brut)" },
+            "pp_ev_user_manual":            { "name": "Mode manuel" },
+            "pp_use_grid_first":            { "name": "Mode réseau prioritaire" },
+            "pp_ev_sn":                     { "name": "Numéro de série borne" },
+            "pp_online_bits":               { "name": "Drapeaux en ligne" },
+            "pp_charge_vehicle_id":         { "name": "ID véhicule" },
+            "pp_order_start_timestamp":     { "name": "Début session (epoch s)" }
         },
         "binary_sensor": {
             "online":                       { "name": "En ligne" },
@@ -165,6 +188,28 @@
             "system_pause":                 { "name": "Pause système" },
             "battery_heat":                 { "name": "Chauffage batterie" },
             "charger_auto_chg":             { "name": "Charge automatique VE" }
+        }
+    },
+    "services": {
+        "set_tou_schedule": {
+            "name": "Définir le calendrier TOU",
+            "description": "Écrit une stratégie de tarification horosaisonnière (TOU) dans l'onduleur PowerOcean.",
+            "fields": {
+                "schedule": {
+                    "name": "Calendrier",
+                    "description": "Stratégie TOU au format JSON."
+                }
+            }
+        },
+        "set_grid_type": {
+            "name": "Définir le type de réseau",
+            "description": "Bascule entre connexion réseau monophasée et triphasée.",
+            "fields": {
+                "grid_type": {
+                    "name": "Type de réseau",
+                    "description": "0 = monophasé, 1 = triphasé."
+                }
+            }
         }
     }
 }
