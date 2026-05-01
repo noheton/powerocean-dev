@@ -11,7 +11,8 @@ Equipment (doc/equipment.md):
   12 kW PowerOcean inverter + 2 x 5 kWh batteries + 11 kW PowerPulse
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from homeassistant.components.number import (
     NumberDeviceClass,
@@ -47,6 +48,14 @@ class PowerOceanNumberDescription(NumberEntityDescription):
     """Extends NumberEntityDescription with the API write-parameter key."""
 
     param_key: str = ""
+    # True = entity belongs to the PowerPulse child device
+    is_powerpulse: bool = False
+    # Coordinator data field name(s) used to read back the current value.
+    # Searched as {device_sn}_*_{field} in coordinator.data.
+    state_fields: tuple[str, ...] = field(default_factory=tuple)
+    # Multiplier applied to the raw coordinator value before display (e.g. 0.1
+    # converts deci-amps to amps).
+    state_scale: float = 1.0
 
 
 NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
@@ -94,6 +103,7 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
         icon="mdi:ev-station",
         mode=NumberMode.BOX,
         param_key=PARAM_CHARGER_POWER_LIMIT,
+        is_powerpulse=True,
     ),
     # ── Grid import power limit ──────────────────────────────────────────────
     # ACTION_W_CFG_SYS_GRID_IN_PWR_LIMIT — caps grid draw for TOU / peak-shaving
@@ -114,6 +124,7 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
     # ACTION_W_CFG_SP_CHARGER_DEV_BATT_CHG_AMP_LIMIT
     # Sets the maximum AC charging current (A) for the 11 kW PowerPulse.
     # Range 6-32 A matches IEC 61851 Mode 2/3 AC charging standards.
+    # Read-back fields are stored in deci-amps (multiply by 0.1 to get A).
     PowerOceanNumberDescription(
         key="charger_amp_limit",
         translation_key="charger_amp_limit",
@@ -126,6 +137,11 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
         icon="mdi:current-ac",
         mode=NumberMode.BOX,
         param_key=PARAM_CHARGER_AMP_LIMIT,
+        is_powerpulse=True,
+        # evCurrSet (EVCHARGING_REPORT) and userCurrentSet (EDEV_PARAM_REPORT)
+        # both store the value in deci-amps.
+        state_fields=("evCurrSet", "userCurrentSet"),
+        state_scale=0.1,
     ),
 ]
 
@@ -136,12 +152,25 @@ async def async_setup_entry(
     """Set up PowerOcean number entities for a config entry."""
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
+    endpoints = data["endpoints"]
+
+    pp_sn = _find_powerpulse_sn(endpoints, coordinator.api.sn)
 
     entities = [
-        PowerOceanNumber(coordinator, description)
+        PowerOceanNumber(coordinator, description, pp_sn=pp_sn)
         for description in NUMBER_DESCRIPTIONS
     ]
     async_add_entities(entities)
+
+
+def _find_powerpulse_sn(endpoints: dict, inverter_sn: str) -> str | None:
+    """Return the PowerPulse serial number from the endpoint registry, or None."""
+    for ep_id, ep in endpoints.items():
+        if ep.serial != inverter_sn and any(
+            r in ep_id for r in ("EDEV_PARAM_REPORT", "EVCHARGING_REPORT")
+        ):
+            return ep.serial
+    return None
 
 
 class PowerOceanNumber(CoordinatorEntity, NumberEntity):
@@ -153,6 +182,7 @@ class PowerOceanNumber(CoordinatorEntity, NumberEntity):
         self,
         coordinator: PowerOceanCoordinator,
         description: PowerOceanNumberDescription,
+        pp_sn: str | None = None,
     ) -> None:
         """Initialize the number entity."""
         super().__init__(coordinator)
@@ -160,10 +190,32 @@ class PowerOceanNumber(CoordinatorEntity, NumberEntity):
         self._param_key = description.param_key
         self._cached_value: float | None = None
         self._attr_unique_id = f"{coordinator.api.sn}_{description.key}"
+        self._device_sn = (
+            pp_sn if (description.is_powerpulse and pp_sn) else coordinator.api.sn
+        )
+
+    def _read_coordinator_value(self) -> float | None:
+        """Search coordinator.data for any field matching the description's state_fields."""
+        fields = self.entity_description.state_fields
+        if not fields or not self._device_sn:
+            return None
+        data = self.coordinator.data or {}
+        prefix = self._device_sn + "_"
+        for f in fields:
+            suffix = "_" + f
+            for key, value in data.items():
+                if key.startswith(prefix) and key.endswith(suffix):
+                    raw = value
+                    if raw is not None:
+                        return float(raw) * self.entity_description.state_scale
+        return None
 
     @property
     def native_value(self) -> float | None:
-        """Return cached value (updated after each successful write)."""
+        """Return current value — live coordinator data preferred, cached as fallback."""
+        live = self._read_coordinator_value()
+        if live is not None:
+            return live
         return self._cached_value
 
     async def async_set_native_value(self, value: float) -> None:
@@ -174,5 +226,4 @@ class PowerOceanNumber(CoordinatorEntity, NumberEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Attach to the main inverter device."""
-        return DeviceInfo(identifiers={(DOMAIN, self.coordinator.api.sn)})
+        return DeviceInfo(identifiers={(DOMAIN, self._device_sn)})

@@ -29,14 +29,18 @@ class PowerOceanSelectDescription(SelectEntityDescription):
     """Extends SelectEntityDescription with API write key and value mapping."""
 
     param_key: str = ""
-    # Maps human-readable option string → integer value sent to the API
     option_values: dict[str, int] = field(default_factory=dict)
+    # True = entity belongs to the PowerPulse child device
+    is_powerpulse: bool = False
+    # Coordinator data field name whose integer value maps to an option string.
+    # Searched as {device_sn}_*_{state_field} in coordinator.data.
+    state_field: str = ""
 
 
 SELECT_DESCRIPTIONS: list[PowerOceanSelectDescription] = [
     # ── PowerPulse charger mode ───────────────────────────────────────────────
     # ACTION_W_CFG_SP_CHARGER_CHG_MODE (SP = SmartPower / EV charger subsystem)
-    # Mode integers from app layout strings: jt303_charger_307_layout
+    # workMode is present in both EDEV_PARAM_REPORT and EVCHARGING_REPORT.
     PowerOceanSelectDescription(
         key="charger_mode",
         translation_key="charger_mode",
@@ -45,10 +49,11 @@ SELECT_DESCRIPTIONS: list[PowerOceanSelectDescription] = [
         icon="mdi:ev-station",
         param_key=PARAM_CHARGER_MODE,
         option_values={"auto": 0, "fast": 1, "eco": 2},
+        is_powerpulse=True,
+        state_field="workMode",
     ),
     # ── Backup box (outage protection) mode ──────────────────────────────────
     # ACTION_W_CFG_BACKUP_BOX_MODE
-    # Mode integers inferred from backup-mode layout strings in APK
     PowerOceanSelectDescription(
         key="backup_mode",
         translation_key="backup_mode",
@@ -60,7 +65,7 @@ SELECT_DESCRIPTIONS: list[PowerOceanSelectDescription] = [
     ),
 ]
 
-# Reverse mapping: API integer → option string (used for state read-back if available)
+# Reverse mapping: API integer → option string (used for state read-back)
 _OPTION_BY_VALUE: dict[str, dict[int, str]] = {
     desc.key: {v: k for k, v in desc.option_values.items()}
     for desc in SELECT_DESCRIPTIONS
@@ -73,12 +78,25 @@ async def async_setup_entry(
     """Set up PowerOcean select entities for a config entry."""
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
+    endpoints = data["endpoints"]
+
+    pp_sn = _find_powerpulse_sn(endpoints, coordinator.api.sn)
 
     entities = [
-        PowerOceanSelect(coordinator, description)
+        PowerOceanSelect(coordinator, description, pp_sn=pp_sn)
         for description in SELECT_DESCRIPTIONS
     ]
     async_add_entities(entities)
+
+
+def _find_powerpulse_sn(endpoints: dict, inverter_sn: str) -> str | None:
+    """Return the PowerPulse serial number from the endpoint registry, or None."""
+    for ep_id, ep in endpoints.items():
+        if ep.serial != inverter_sn and any(
+            r in ep_id for r in ("EDEV_PARAM_REPORT", "EVCHARGING_REPORT")
+        ):
+            return ep.serial
+    return None
 
 
 class PowerOceanSelect(CoordinatorEntity, SelectEntity):
@@ -90,6 +108,7 @@ class PowerOceanSelect(CoordinatorEntity, SelectEntity):
         self,
         coordinator: PowerOceanCoordinator,
         description: PowerOceanSelectDescription,
+        pp_sn: str | None = None,
     ) -> None:
         """Initialize the select entity."""
         super().__init__(coordinator)
@@ -99,10 +118,29 @@ class PowerOceanSelect(CoordinatorEntity, SelectEntity):
         self._reverse_map = _OPTION_BY_VALUE.get(description.key, {})
         self._cached_option: str | None = None
         self._attr_unique_id = f"{coordinator.api.sn}_{description.key}"
+        self._device_sn = (
+            pp_sn if (description.is_powerpulse and pp_sn) else coordinator.api.sn
+        )
+
+    def _read_coordinator_option(self) -> str | None:
+        """Look up the current option from coordinator.data."""
+        f = self.entity_description.state_field
+        if not f or not self._device_sn:
+            return None
+        data = self.coordinator.data or {}
+        prefix = self._device_sn + "_"
+        suffix = "_" + f
+        for key, value in data.items():
+            if key.startswith(prefix) and key.endswith(suffix):
+                return self._reverse_map.get(int(value))
+        return None
 
     @property
     def current_option(self) -> str | None:
-        """Return the last selected option (cached until confirmed by device)."""
+        """Return current option — live coordinator data preferred, cached as fallback."""
+        live = self._read_coordinator_option()
+        if live is not None:
+            return live
         return self._cached_option
 
     async def async_select_option(self, option: str) -> None:
@@ -114,5 +152,4 @@ class PowerOceanSelect(CoordinatorEntity, SelectEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Attach to the main inverter device."""
-        return DeviceInfo(identifiers={(DOMAIN, self.coordinator.api.sn)})
+        return DeviceInfo(identifiers={(DOMAIN, self._device_sn)})

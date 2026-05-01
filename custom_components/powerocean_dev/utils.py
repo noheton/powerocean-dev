@@ -270,6 +270,9 @@ BOX_SCHEMAS: dict[str, BoxSchema] = {
         "paths": {
             "devSn": ["devInfo", "devSn"],
             "workMode": ["pileChargingParamReport", "paramSet", "workMode"],
+            "switchBits": ["pileChargingParamReport", "paramSet", "switchBits"],
+            "userCurrentSet": ["pileChargingParamReport", "paramSet", "userCurrentSet"],
+            "currentOuputMax": ["pileChargingParamReport", "paramSet", "currentOuputMax"],
             "timeToUseCar": [
                 "pileChargingParamReport",
                 "paramSet",

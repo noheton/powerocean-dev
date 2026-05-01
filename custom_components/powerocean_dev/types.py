@@ -85,7 +85,9 @@ class SensorClassHelper:
             ),
         ),
         (
-            re.compile(r"(amp|current)$", re.IGNORECASE),
+            # Negative lookbehind (?<!st) prevents "timestamp" (ends in "stamp")
+            # from being misclassified as a current sensor.
+            re.compile(r"(?<!st)(amp|current)$", re.IGNORECASE),
             (
                 SensorDeviceClass.CURRENT,
                 UnitOfElectricCurrent.AMPERE,
