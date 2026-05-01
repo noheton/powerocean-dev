@@ -30,10 +30,10 @@ PLATFORMS: list[Platform] = [
 ATTR_PRODUCT_DESCRIPTION = "Product Description"
 ATTR_PRODUCT_SERIAL = "Vendor Product Serial"
 
-# ── EcoFlow consumer API write endpoint (APK: /iot-devices/device/setDeviceProperty) ──
+# ── EcoFlow consumer API write endpoint ──────────────────────────────────────
 API_WRITE_ENDPOINT = "/iot-devices/device/setDeviceProperty"
 
-# ── Write-command parameter keys (camelCase proto field names from APK analysis) ──
+# ── Write-command parameter keys (camelCase field names observed in network traffic) ──
 # Backup / energy management
 PARAM_BACKUP_RESERVE_SOC = "cfgBackupReverseSoc"
 PARAM_BACKUP_SOC_VPP = "cfgBackupSocVpp"
@@ -52,7 +52,6 @@ PARAM_CHARGER_AUTO_CHG = "cfgSpChargerAutoChgOpen"
 PARAM_FAST_CHG_MAX_SOC = "cfgSpFastChgMaxSoc"
 
 # BMS (Battery Management System)
-# ACTION_W_CFG_BMS_BATTERY_HEAT — enable/disable battery cell heating for cold climates
 PARAM_BATTERY_HEAT = "cfgBmsBatteryHeat"
 
 # System lifecycle (active commands — trigger once)

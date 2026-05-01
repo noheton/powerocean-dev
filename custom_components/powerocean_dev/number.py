@@ -1,11 +1,11 @@
 """
 PowerOcean number platform — numeric adjustable parameters.
 
-APK sources (CFG_*_FIELD_NUMBER → camelCase write key):
-  CFG_BACKUP_REVERSE_SOC_FIELD_NUMBER  → cfgBackupReverseSoc
-  CFG_SP_FAST_CHG_MAX_SOC_FIELD_NUMBER → cfgSpFastChgMaxSoc
-  CFG_SP_CHARGER_CHG_POW_LIMIT_FIELD_NUMBER → cfgSpChargerChgPowLimit
-  CFG_SYS_GRID_IN_PWR_LIMIT_FIELD_NUMBER   → cfgSysGridInPwrLimit
+Observed write-parameter field names (camelCase, sent via setDeviceProperty):
+  cfgBackupReverseSoc      — minimum battery SoC kept for grid outage
+  cfgSpFastChgMaxSoc       — ceiling SoC for fast-charge mode
+  cfgSpChargerChgPowLimit  — max charge power for the PowerPulse EV charger
+  cfgSysGridInPwrLimit     — grid import power cap
 
 Equipment (doc/equipment.md):
   12 kW PowerOcean inverter + 2 x 5 kWh batteries + 11 kW PowerPulse
@@ -60,7 +60,7 @@ class PowerOceanNumberDescription(NumberEntityDescription):
 
 NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
     # ── Backup reserve SoC ───────────────────────────────────────────────────
-    # ACTION_W_CFG_BACKUP_REVERSE_SOC — minimum battery charge kept for grid outage
+    # observed write field: cfgBackupReverseSoc — minimum battery charge kept for grid outage
     PowerOceanNumberDescription(
         key="backup_reserve_soc",
         translation_key="backup_reserve_soc",
@@ -73,9 +73,10 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
         icon="mdi:battery-lock",
         mode=NumberMode.BOX,
         param_key=PARAM_BACKUP_RESERVE_SOC,
+        state_fields=("batterySocLowerLimit",),
     ),
     # ── Fast-charge upper SoC limit ──────────────────────────────────────────
-    # ACTION_W_CFG_SP_FAST_CHG_MAX_SOC — ceiling for fast-charge mode
+    # observed write field: cfgSpFastChgMaxSoc — ceiling for fast-charge mode
     PowerOceanNumberDescription(
         key="fast_chg_max_soc",
         translation_key="fast_chg_max_soc",
@@ -88,9 +89,10 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
         icon="mdi:battery-charging-100",
         mode=NumberMode.BOX,
         param_key=PARAM_FAST_CHG_MAX_SOC,
+        state_fields=("batterySocUpperLimit",),
     ),
     # ── PowerPulse charger power cap ─────────────────────────────────────────
-    # ACTION_W_CFG_SP_CHARGER_CHG_POW_LIMIT — max charge power for the 11 kW PowerPulse
+    # observed write field: cfgSpChargerChgPowLimit — max charge power for the 11 kW PowerPulse
     PowerOceanNumberDescription(
         key="charger_power_limit",
         translation_key="charger_power_limit",
@@ -106,7 +108,7 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
         is_powerpulse=True,
     ),
     # ── Grid import power limit ──────────────────────────────────────────────
-    # ACTION_W_CFG_SYS_GRID_IN_PWR_LIMIT — caps grid draw for TOU / peak-shaving
+    # observed write field: cfgSysGridInPwrLimit — caps grid draw for TOU / peak-shaving
     PowerOceanNumberDescription(
         key="grid_in_pwr_limit",
         translation_key="grid_in_pwr_limit",
@@ -121,7 +123,7 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
         param_key=PARAM_GRID_IN_PWR_LIMIT,
     ),
     # ── PowerPulse device-battery charge amp limit ───────────────────────────
-    # ACTION_W_CFG_SP_CHARGER_DEV_BATT_CHG_AMP_LIMIT
+    # observed write field: cfgSpChargerDevBattChgAmpLimit
     # Sets the maximum AC charging current (A) for the 11 kW PowerPulse.
     # Range 6-32 A matches IEC 61851 Mode 2/3 AC charging standards.
     # Read-back fields are stored in deci-amps (multiply by 0.1 to get A).

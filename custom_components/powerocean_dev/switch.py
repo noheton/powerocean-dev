@@ -1,13 +1,14 @@
 """
 PowerOcean switch platform — on/off controllable parameters.
 
-APK sources (CFG_*_FIELD_NUMBER → camelCase write key):
-  CFG_SP_CHARGER_CHG_OPEN_FIELD_NUMBER          → cfgSpChargerChgOpen
-  CFG_GRID_CHARGE_TO_BATTERY_ENABLE_FIELD_NUMBER → cfgGridChargeToBatteryEnable
-  CFG_SYS_PAUSE_FIELD_NUMBER / CFG_SYS_RESUME_FIELD_NUMBER → cfgSysPause / cfgSysResume
+Observed write-parameter field names (camelCase, sent via setDeviceProperty):
+  cfgSpChargerChgOpen           — enable/disable the PowerPulse EV charger
+  cfgGridChargeToBatteryEnable  — allow/block grid-to-battery charging
+  cfgSysPause / cfgSysResume    — pause or resume the inverter
+  cfgSpChargerAutoChgOpen       — PowerPulse automatic charge scheduling
 
 Equipment (doc/equipment.md):
-  12 kW PowerOcean, 2 x 5 kWh batteries, 11 kW PowerPulse (AC31ZEH4AG130052)
+  12 kW PowerOcean, 2 x 5 kWh batteries, 11 kW PowerPulse
 """
 
 from dataclasses import dataclass, field
@@ -52,7 +53,7 @@ class PowerOceanSwitchDescription(SwitchEntityDescription):
 
 SWITCH_DESCRIPTIONS: list[PowerOceanSwitchDescription] = [
     # ── PowerPulse (SP / EV charger) enable ──────────────────────────────────
-    # ACTION_W_CFG_SP_CHARGER_CHG_OPEN — enable/disable the 11 kW PowerPulse
+    # observed write field: cfgSpChargerChgOpen — enable/disable the 11 kW PowerPulse
     # Read-back: evOnoffSet (EVCHARGING_REPORT) or bit 0 of switchBits (EDEV_PARAM_REPORT)
     PowerOceanSwitchDescription(
         key="charger_enable",
@@ -67,7 +68,7 @@ SWITCH_DESCRIPTIONS: list[PowerOceanSwitchDescription] = [
         state_bit=0,
     ),
     # ── Grid → battery charging enable ──────────────────────────────────────
-    # ACTION_W_CFG_GRID_CHARGE_TO_BATTERY_ENABLE — allow/block grid-to-battery charging
+    # observed write field: cfgGridChargeToBatteryEnable — allow/block grid-to-battery charging
     PowerOceanSwitchDescription(
         key="grid_charge_enable",
         translation_key="grid_charge_enable",
@@ -77,7 +78,7 @@ SWITCH_DESCRIPTIONS: list[PowerOceanSwitchDescription] = [
         off_params={PARAM_GRID_CHARGE_ENABLE: 0},
     ),
     # ── System pause ─────────────────────────────────────────────────────────
-    # ACTION_W_CFG_SYS_PAUSE / ACTION_W_CFG_SYS_RESUME
+    # observed write fields: cfgSysPause / cfgSysResume
     PowerOceanSwitchDescription(
         key="system_pause",
         translation_key="system_pause",
@@ -87,7 +88,7 @@ SWITCH_DESCRIPTIONS: list[PowerOceanSwitchDescription] = [
         off_params={PARAM_SYS_RESUME: 1},
     ),
     # ── Battery cell heating ──────────────────────────────────────────────────
-    # ACTION_W_CFG_BMS_BATTERY_HEAT — enables the integrated cell heater in the
+    # observed write field: cfgBmsBatteryHeat — enables the integrated cell heater in the
     # 5 kWh battery modules.
     PowerOceanSwitchDescription(
         key="battery_heat",
@@ -98,7 +99,7 @@ SWITCH_DESCRIPTIONS: list[PowerOceanSwitchDescription] = [
         off_params={PARAM_BATTERY_HEAT: 0},
     ),
     # ── PowerPulse automatic charging ────────────────────────────────────────
-    # ACTION_W_CFG_SP_CHARGER_AUTO_CHG_OPEN — lets the PowerPulse decide the
+    # observed write field: cfgSpChargerAutoChgOpen — lets the PowerPulse decide the
     # optimal charge window based on solar availability and TOU tariff.
     # Read-back: evUserManual=0 means auto is ON (inverted); bit 1 of switchBits
     # (EDEV_PARAM_REPORT) maps directly.

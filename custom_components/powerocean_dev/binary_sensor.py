@@ -19,7 +19,7 @@ from .coordinator import PowerOceanCoordinator
 from .types import PowerOceanEndPoint
 
 # ── Static descriptions for all known boolean data-points ────────────────────
-# Sourced from REPORT_DATAPOINTS and APK field analysis.
+# Sourced from REPORT_DATAPOINTS and observed network traffic.
 # Keys listed here are EXCLUDED from the sensor platform to avoid duplication.
 
 BINARY_SENSOR_DESCRIPTIONS: dict[str, BinarySensorEntityDescription] = {

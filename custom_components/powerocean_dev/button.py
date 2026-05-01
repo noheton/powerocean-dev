@@ -1,9 +1,9 @@
 """
 PowerOcean button platform — momentary hardware actions.
 
-APK sources:
-  ACTION_W_ACTIVE_SYS_REBOOT   → param key activeSysReboot
-  ACTION_W_ACTIVE_SYS_SELFCHECK → param key activeSysSelfcheck
+Observed write-parameter field names (camelCase, sent via setDeviceProperty):
+  activeSysReboot    — trigger a full system reboot
+  activeSysSelfcheck — trigger a self-diagnostic run
 
 Both commands are sent via async_set_property with value=1 (trigger).
 """

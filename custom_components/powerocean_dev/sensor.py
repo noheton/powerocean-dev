@@ -474,14 +474,12 @@ SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
         key="chargingStatus",
         translation_key="pp_charging_status",
         icon="mdi:ev-station",
-        state_class=SensorStateClass.MEASUREMENT,
     ),
     "workMode": SensorEntityDescription(
         key="workMode",
         translation_key="pp_work_mode",
         icon="mdi:ev-station",
         entity_category=EntityCategory.DIAGNOSTIC,
-        state_class=SensorStateClass.MEASUREMENT,
     ),
     "chargeTarget": SensorEntityDescription(
         key="chargeTarget",
