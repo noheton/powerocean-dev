@@ -289,7 +289,7 @@ class EcoflowApi:
         """
         Write a device property via the EcoFlow consumer API.
 
-        Endpoint discovered in APK DEX strings: /iot-devices/device/setDeviceProperty.
+        Endpoint: /iot-devices/device/setDeviceProperty.
         Auth: bearer token from async_authorize().
         Payload: {"sn": <device_sn>, "params": {<camelCase_field>: <value>}}
 

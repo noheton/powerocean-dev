@@ -1,11 +1,11 @@
 """
 PowerOcean select platform — mode-selection parameters.
 
-APK sources (CFG_*_FIELD_NUMBER → camelCase write key):
-  CFG_SP_CHARGER_CHG_MODE_FIELD_NUMBER → cfgSpChargerChgMode
-  CFG_BACKUP_BOX_MODE_FIELD_NUMBER     → cfgBackupBoxMode
+Observed write-parameter field names (camelCase, sent via setDeviceProperty):
+  cfgSpChargerChgMode  — PowerPulse charging mode (0=auto, 1=fast, 2=eco)
+  cfgBackupBoxMode     — inverter operating mode (0=self-use, 1=backup, 2=off)
 
-Option integer values are derived from EcoFlow app layout strings and
+Option integer values are derived from observed network traffic and
 community protocol analysis.  Confirm values on hardware before relying
 on them in automations.
 """
@@ -39,7 +39,7 @@ class PowerOceanSelectDescription(SelectEntityDescription):
 
 SELECT_DESCRIPTIONS: list[PowerOceanSelectDescription] = [
     # ── PowerPulse charger mode ───────────────────────────────────────────────
-    # ACTION_W_CFG_SP_CHARGER_CHG_MODE (SP = SmartPower / EV charger subsystem)
+    # observed write field: cfgSpChargerChgMode (SP = SmartPower / EV charger subsystem)
     # workMode is present in both EDEV_PARAM_REPORT and EVCHARGING_REPORT.
     PowerOceanSelectDescription(
         key="charger_mode",
@@ -53,7 +53,7 @@ SELECT_DESCRIPTIONS: list[PowerOceanSelectDescription] = [
         state_field="workMode",
     ),
     # ── Backup box (outage protection) mode ──────────────────────────────────
-    # ACTION_W_CFG_BACKUP_BOX_MODE
+    # observed write field: cfgBackupBoxMode
     PowerOceanSelectDescription(
         key="backup_mode",
         translation_key="backup_mode",
@@ -62,6 +62,7 @@ SELECT_DESCRIPTIONS: list[PowerOceanSelectDescription] = [
         icon="mdi:home-battery",
         param_key=PARAM_BACKUP_BOX_MODE,
         option_values={"self_use": 0, "backup": 1, "off": 2},
+        state_field="workingMode",
     ),
 ]
 

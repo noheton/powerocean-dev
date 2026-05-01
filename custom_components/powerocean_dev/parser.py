@@ -623,7 +623,7 @@ class EcoflowParser:
 
             # ------------------------------
             # Energy flows: grid, battery, solar, house
-            # APK sources: pcsMeterPower (EMS_HEARTBEAT), emsBpPower (EMS_HEARTBEAT)
+            # Source fields: pcsMeterPower and emsBpPower from EMS_HEARTBEAT report.
             # Both fields default to 0 when absent from the response.
             # If either is missing, the derived flow sensors are INTERPOLATED from
             # incomplete data — a protocol deviation warning is emitted.
@@ -639,7 +639,7 @@ class EcoflowParser:
                     "[%s] EMS heartbeat missing 'pcsMeterPower' — "
                     "energy-flow sensors (gridPower, gridToHouse, gridToBattery) "
                     "are interpolated as 0 W.  "
-                    "Verify meter wiring or firmware (APK: EMS_HEARTBEAT_FIELD pcsMeterPower).",
+                    "Verify meter wiring or firmware.",
                     self.sn_inverter,
                 )
 
@@ -651,7 +651,7 @@ class EcoflowParser:
                     "[%s] EMS heartbeat missing 'emsBpPower' — "
                     "battery-flow sensors (batteryToHouse, solarToBattery, gridToBattery) "
                     "are interpolated as 0 W.  "
-                    "Check BMS communication (APK: EMS_HEARTBEAT_FIELD emsBpPower).",
+                    "Check BMS communication.",
                     self.sn_inverter,
                 )
 
@@ -676,7 +676,7 @@ class EcoflowParser:
                 LOGGER.warning(
                     "[%s] Computed house consumption is %.1f W (negative) — "
                     "clamping to 0.  This may indicate a pcsMeterPower sign convention "
-                    "mismatch with the APK analysis (expected: positive = import).  "
+                    "mismatch (expected: positive = import).  "
                     "solar=%.1f W, grid=%.1f W, battery=%.1f W",
                     self.sn_inverter,
                     house_consumption_raw,

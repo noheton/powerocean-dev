@@ -217,9 +217,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(update_listener))
 
     # ── Service: set_tou_schedule ─────────────────────────────────────────────
-    # APK source: ACTION_W_CFG_TOU_STRATEGY / CFG_TOU_HOURS_STRATEGY_FIELD_NUMBER
+    # observed write field: cfgTouStrategy (or cfgTouHoursStrategy for hourly variant)
     # The TOU strategy is a single JSON blob; individual hours are not exposed as
-    # separate entities per APK analysis recommendation.
+    # separate entities.
     async def handle_set_tou_schedule(call: ServiceCall) -> None:
         schedule_raw: str = call.data["schedule"]
         try:
@@ -236,7 +236,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await api_entry.async_set_property({"cfgTouStrategy": schedule_obj})
 
     # ── Service: set_grid_type ────────────────────────────────────────────────
-    # APK source: ACTION_W_CFG_GRID_TYPE / CFG_GRID_TYPE_FIELD_NUMBER
+    # observed write field: cfgGridType
     async def handle_set_grid_type(call: ServiceCall) -> None:
         grid_type = int(call.data["grid_type"])
         api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
