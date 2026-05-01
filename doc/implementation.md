@@ -274,4 +274,161 @@ each received entries for the 3 new entities:
 | `switch.battery_heat` | Battery Heating | Batterieheizung | Chauffage batterie |
 | `switch.charger_auto_chg` | Automatic EV Charging | Automatisches Laden | Charge automatique VE |
 | `number.charger_amp_limit` | Charger Current Limit | Ladestrom Limit | Limite courant de charge |
-   write failures.
+
+---
+
+## 8. Refactor Pass 3 — Auto-Detection + Cross-Domain Migration — 2026-05-01
+
+### 8.1 New API Methods (`api.py`)
+
+Two new methods were added to `EcoflowApi`:
+
+#### `async_authorize_only()`
+
+Authenticates against the EcoFlow login endpoint and stores the bearer token, but
+does **not** call `_detect_region()`.  Used during the credentials step of the config
+flow when no device serial number is yet known.
+
+```python
+await api.async_authorize_only()
+# → self.token is set; self.api_host remains None
+```
+
+#### `async_list_devices()`
+
+Probes the EU and US hosts in order using
+`/provider-service/user/device/list` (bearer-auth, no `product-type` header).
+On the first host that returns HTTP 200 it sets `self.api_host` and returns a
+filtered list of PowerOcean devices.  Returns `[]` on timeout, network error, or
+when no matching devices are found.
+
+Return format per device: `{"sn": str, "product_type": str, "name": str}`
+
+Filtering: only devices whose `productType` (or `product_type`) matches one of the
+four known PowerOcean codes (`"83"`, `"85"`, `"86"`, `"87"`) are returned.
+
+#### `_parse_device_list(response)`
+
+Internal helper that normalises the list endpoint response.  Handles both flat-list
+(`{"data": [...]}`) and nested (`{"data": {"devices": [...]}}`) shapes, and coerces
+`productType` to `str` for model-code lookup.
+
+A matching override `async_authorize_only()` was added to `HAEcoflowApi` in
+`ecoflow.py` to map `AuthenticationError` → `IntegrationError` and
+`EcoflowApiError` → `ConfigEntryNotReady`, consistent with the existing
+`async_authorize` override.
+
+---
+
+### 8.2 Config Flow Refactored to 3 Steps (`config_flow.py`)
+
+The config flow was split from 2 steps (credentials+device → options) into 3:
+
+| Step | `step_id` | Fields | Notes |
+|------|-----------|--------|-------|
+| 1 | `user` | email, password | Triggers auth + device-list fetch |
+| 2 | `pick_device` | auto selector **or** device_id + model_id | Dynamic based on discovery result |
+| 3 | `device_options` | friendly_name, scan_interval | Unchanged |
+
+**Step 1 (`user`)** instantiates `HAEcoflowApi` with empty `serialnumber`/`variant`,
+calls `async_authorize_only()` then `async_list_devices()`.  The discovered list is
+stored in `self._discovered_devices`.  On any error `errors["base"] = "cannot_connect"`
+is set and the form is re-shown.
+
+**Step 2 (`pick_device`)** builds its schema at runtime:
+- If `self._discovered_devices` is non-empty and all entries have valid product-type
+  codes, a `selector(select)` drop-down is rendered.  Each option value is encoded as
+  `"<sn>|<product_type>"` and parsed on submit.
+- Otherwise the fallback `STEP_PICK_DEVICE_MANUAL_SCHEMA` is shown (plain text
+  `device_id` + model dropdown), identical to the former step 1 schema minus the
+  credential fields.
+
+`STEP_PICK_DEVICE_MANUAL_SCHEMA` and `_MODEL_OPTIONS` are module-level constants
+so they can be reused by the reconfigure schema without duplication.
+
+The `reconfigure` step retains full manual entry (serial + model + credentials) as
+it is used to fix an already-configured entry where the serial number is known.
+
+**New module-level constants:**
+- `STEP_CREDENTIALS_SCHEMA` — email + password only
+- `STEP_PICK_DEVICE_MANUAL_SCHEMA` — device_id text + model_id dropdown
+- `_MODEL_OPTIONS` — shared list of `{"label": …, "value": …}` dicts
+
+**`validate_input_for_device` renamed** to `_validate_full_credentials` (private,
+underscore-prefixed) to signal it is an internal helper, not a public API.
+
+---
+
+### 8.3 Cross-Domain Migration from `powerocean`
+
+#### Import flow (`config_flow.py`)
+
+`async_step_import(import_data)` creates a new `powerocean_dev` config entry directly
+from a data dict without showing any UI.  It:
+
+1. Derives `unique_id = f"PowerOcean {device_id}"` and aborts (silently) if already
+   configured.
+2. Looks up `model_name` from `MODEL_NAME_MAP`; defaults to `"PowerOcean"` if the
+   model code is unrecognised.
+3. Logs at `INFO` level that an import is in progress.
+4. Calls `async_create_entry` with the passed `data` dict and an `options` dict built
+   from `CONF_FRIENDLY_NAME` / `CONF_SCAN_INTERVAL` keys.
+
+#### Auto-import trigger (`__init__.py`)
+
+`async_setup` was extended to scan for existing `powerocean` domain config entries
+at startup time.  For each entry whose device SN is not already present in any
+`powerocean_dev` entry, an import flow is scheduled via:
+
+```python
+hass.async_create_task(
+    hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_IMPORT},
+        data={**old_entry.data, CONF_FRIENDLY_NAME: ..., CONF_SCAN_INTERVAL: ...},
+    )
+)
+```
+
+The check is per-SN rather than per-entry to avoid duplicate imports if
+`async_setup` is called more than once.  The original `powerocean` entries are
+left untouched — the user can remove them manually after verifying the migration.
+
+`import json` (used in `handle_set_tou_schedule`) was moved from the inline
+function scope to the module top-level import block to satisfy `PLC0415`.
+
+---
+
+### 8.4 Strings and Translations
+
+`config.step.user` in `strings.json` and all three translation files had
+`device_id` and `model_id` removed from its `data` block (those fields moved to the
+new `pick_device` step).
+
+New `config.step.pick_device` step added with data keys:
+- `device_selection` — label for the auto-detected selector
+- `device_id` — label for the manual serial-number fallback
+- `model_id` — label for the manual model dropdown
+
+New abort reason `already_imported` added to `config.abort` in all three languages.
+
+---
+
+### 8.5 Lint Fixes (Pre-existing)
+
+The following pre-existing lint issues were resolved to keep CI green:
+
+| File | Rule | Fix |
+|------|------|-----|
+| `binary_sensor.py` | `E501` | Shorten long comment on line 33 |
+| `const.py` | `E501` | Shorten two APK comment lines (33, 36) |
+| `number.py` | `RUF002` | Replace `×` (MULTIPLICATION SIGN) with `x` |
+| `number.py` | `RUF003` | Replace `–` (EN DASH) with `-` in range comment |
+| `number.py` | `E501` | Shorten `native_value` docstring |
+| `select.py` | `E501` | Break long list comprehension onto two lines |
+| `switch.py` | `RUF002` | Replace `×` with `x` |
+| `switch.py` | `D105` | Add docstring to `__post_init__` |
+| `parser.py` | `PLR0912`, `PLR2004`, `E501` | Added to `.ruff.toml` per-file-ignores |
+| `switch.py` | `ARG002` | Added to `.ruff.toml` per-file-ignores |
+| `__init__.py` | `PLR0915` | Added to `.ruff.toml` per-file-ignores |
+| `button.py` | `D213` | Auto-fixed by `ruff --fix` |
