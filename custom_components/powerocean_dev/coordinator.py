@@ -46,6 +46,6 @@ class PowerOceanCoordinator(DataUpdateCoordinator[dict[str, float | int | str]])
         self.parser = EcoflowParser(variant=self.api.variant, sn=self.api.sn)
 
     async def _async_update_data(self) -> dict[str, float | int | str]:
-        """Holt LIVE-Daten und parsed NUR Values."""
+        """Fetch live sensor values from the EcoFlow device and parse them."""
         response = await self.api.fetch_raw()
         return self.parser.parse_values(response)

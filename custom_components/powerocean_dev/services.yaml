@@ -1,0 +1,42 @@
+set_tou_schedule:
+  name: Set TOU Schedule
+  description: >
+    Write a Time-of-Use strategy to the PowerOcean inverter.
+    The schedule is a JSON object matching the EcoFlow TOU strategy schema
+    (APK: ACTION_W_CFG_TOU_STRATEGY / CFG_TOU_HOURS_STRATEGY_FIELD_NUMBER).
+    Pass the complete strategy blob; partial updates are not supported.
+  fields:
+    schedule:
+      name: Schedule
+      description: >
+        TOU strategy as a JSON string.  Example:
+        {"startTime":"00:00","endTime":"08:00","price":0.08,"action":"charge"}
+      required: true
+      example: '{"startTime":"22:00","endTime":"06:00","price":0.06,"action":"charge"}'
+      selector:
+        text:
+          multiline: true
+  target:
+    device:
+      integration: powerocean_dev
+
+set_grid_type:
+  name: Set Grid Type
+  description: >
+    Switch the inverter between single-phase and three-phase grid connection
+    (APK: ACTION_W_CFG_GRID_TYPE / CFG_GRID_TYPE_FIELD_NUMBER).
+  fields:
+    grid_type:
+      name: Grid Type
+      description: "0 = single-phase, 1 = three-phase"
+      required: true
+      selector:
+        select:
+          options:
+            - label: Single-phase
+              value: "0"
+            - label: Three-phase
+              value: "1"
+  target:
+    device:
+      integration: powerocean_dev

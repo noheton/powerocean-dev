@@ -91,6 +91,23 @@ class HAEcoflowApi(EcoflowApi):
         except EcoflowApiError as e:
             raise ConfigEntryNotReady from e
 
+    async def async_authorize_only(self) -> None:
+        """
+        Authenticate without region detection, mapping errors to HA exceptions.
+
+        Raises:
+            IntegrationError: If credentials are invalid.
+            ConfigEntryNotReady: If the API is temporarily unavailable.
+
+        """
+        try:
+            await super().async_authorize_only()
+        except AuthenticationError as e:
+            msg = "Invalid username or password"
+            raise IntegrationError(msg) from e
+        except EcoflowApiError as e:
+            raise ConfigEntryNotReady from e
+
     async def fetch_raw(self) -> dict[str, Any]:
         """
         Fetch raw device data from the EcoFlow API.

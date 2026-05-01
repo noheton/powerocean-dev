@@ -1,0 +1,170 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "EcoFlow-Zugangsdaten eingeben. Verbundene PowerOcean-Geräte werden automatisch erkannt.",
+                "data": {
+                    "email": "E-Mail-Adresse",
+                    "password": "Passwort"
+                }
+            },
+            "pick_device": {
+                "description": "Ein erkanntes PowerOcean-Gerät auswählen oder Seriennummer und Modell manuell eingeben, falls keine Geräte erkannt wurden.",
+                "data": {
+                    "device_selection": "Erkanntes Gerät",
+                    "device_id": "Seriennummer des Wechselrichters (wie in der EcoFlow-App angezeigt)",
+                    "model_id": "PowerOcean-Modell"
+                }
+            },
+            "device_options": {
+                "description": "Geräteoptionen konfigurieren:",
+                "data": {
+                    "friendly_name": "Gerätename",
+                    "scan_interval": "Aktualisierungsintervall (in Sekunden)"
+                }
+            },
+            "reconfigure": {
+                "description": "PowerOcean-Zugangsdaten aktualisieren.",
+                "data": {
+                    "device_id": "Seriennummer des Wechselrichters (wie in der EcoFlow-App angezeigt)",
+                    "email": "E-Mail-Adresse",
+                    "password": "Passwort",
+                    "model_id": "PowerOcean-Modell"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Verbindung fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.",
+            "invalid_auth": "Ungültige Authentifizierung",
+            "unknown": "Unerwarteter Fehler"
+        },
+        "abort": {
+            "already_configured": "Dieses Gerät ist bereits konfiguriert.",
+            "reconfiguration_completed": "Gerätekonfiguration wurde aktualisiert. Die Integration wird neu geladen.",
+            "already_imported": "Dieses Gerät wurde bereits aus der ursprünglichen PowerOcean-Integration importiert."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "description": "Einstellungen der PowerOcean-Integration anpassen.",
+                "data": {
+                    "friendly_name": "Gerätename",
+                    "scan_interval": "Aktualisierungsintervall (in Sekunden)"
+                }
+            }
+        }
+    },
+    "entity": {
+        "sensor": {
+            "sys_load_pwr":                 { "name": "Hausverbrauch" },
+            "sys_grid_pwr":                 { "name": "Netzleistung (System)" },
+            "mppt_pwr":                     { "name": "Solarertrag (MPPT)" },
+            "bp_pwr":                       { "name": "Batterieleistung" },
+            "dcdc_pwr":                     { "name": "DC-DC-Leistung" },
+            "pcs_act_pwr":                  { "name": "Wechselrichter-Wirkleistung" },
+            "pcs_meter_power":              { "name": "PCS-Zählerleistung" },
+            "house_power":                  { "name": "Hausverbrauch (berechnet)" },
+            "grid_power":                   { "name": "Netzleistung" },
+            "grid_to_battery":              { "name": "Netz zu Batterie" },
+            "grid_to_house":                { "name": "Netz zu Haus" },
+            "battery_to_house":             { "name": "Batterie zu Haus" },
+            "solar_to_battery":             { "name": "Solar zu Batterie" },
+            "solar_to_grid":                { "name": "Solar zu Netz" },
+            "solar_to_house":               { "name": "Solar zu Haus" },
+            "mppt_pv_pwr_total":            { "name": "Solar Gesamtleistung" },
+            "pv1_pwr":                      { "name": "PV-String 1 Leistung" },
+            "pv2_pwr":                      { "name": "PV-String 2 Leistung" },
+            "pv3_pwr":                      { "name": "PV-String 3 Leistung" },
+            "pv_inv_pwr":                   { "name": "PV-Wechselrichterleistung" },
+            "other_pv_pwr":                 { "name": "Sonstige PV-Leistung" },
+            "load_pwr":                     { "name": "Lastleistung" },
+            "heating_power":                { "name": "Heizleistung" },
+            "today_electricity_generation": { "name": "Solarertrag heute" },
+            "month_electricity_generation": { "name": "Solarertrag diesen Monat" },
+            "year_electricity_generation":  { "name": "Solarertrag dieses Jahr" },
+            "total_electricity_generation": { "name": "Solarertrag gesamt" },
+            "grid_out_day_energy":          { "name": "Netzeinspeisung heute" },
+            "grid_in_day_energy":           { "name": "Netzbezug heute" },
+            "bp_in_day_energy":             { "name": "Batterieladung heute" },
+            "bp_out_day_energy":            { "name": "Batterieentladung heute" },
+            "load_day_energy":              { "name": "Lastenergie heute" },
+            "pv_in_day_energy":             { "name": "Solarertrag heute (EMS)" },
+            "bp_total_chg_energy":          { "name": "Batterie Lebensdauer Ladung" },
+            "bp_total_dsg_energy":          { "name": "Batterie Lebensdauer Entladung" },
+            "bp_accu_chg_energy":           { "name": "Batterie kumulierte Ladung" },
+            "bp_accu_dsg_energy":           { "name": "Batterie kumulierte Entladung" },
+            "bp_soc":                       { "name": "Ladezustand der Batterie" },
+            "bp_soh":                       { "name": "Gesundheitszustand der Batterie" },
+            "bp_vol":                       { "name": "Batteriespannung" },
+            "bp_amp":                       { "name": "Batteriestrom" },
+            "bp_remain_watth":              { "name": "Verbleibende Batterieenergie" },
+            "bp_cycles":                    { "name": "Ladezyklen" },
+            "bp_env_temp":                  { "name": "Batterieumgebungstemperatur" },
+            "bp_min_cell_temp":             { "name": "Batterie Zelltemperatur min." },
+            "bp_max_cell_temp":             { "name": "Batterie Zelltemperatur max." },
+            "meter_a_voltage":              { "name": "Phase-A-Spannung" },
+            "meter_b_voltage":              { "name": "Phase-B-Spannung" },
+            "meter_c_voltage":              { "name": "Phase-C-Spannung" },
+            "meter_a_current":              { "name": "Phase-A-Strom" },
+            "meter_b_current":              { "name": "Phase-B-Strom" },
+            "meter_c_current":              { "name": "Phase-C-Strom" },
+            "meter_power_factor":           { "name": "Leistungsfaktor" },
+            "ev_pwr":                       { "name": "Ladebox Leistung" },
+            "ev_charging_energy":           { "name": "Ladeenergie (Sitzung)" },
+            "charging_pwr":                 { "name": "Ladeleistung" },
+            "hr_pwr":                       { "name": "Heizstab Leistung" },
+            "hr_temp":                      { "name": "Wassertemperatur" },
+            "hr_target_temp":               { "name": "Zielwassertemperatur" },
+            "module_sw_ver":                { "name": "Firmware-Version" },
+            "system_name":                  { "name": "Systemname" },
+            "ems_bp_alive_num":             { "name": "Aktive Batteriemodule" },
+            "bp_online_sum":                { "name": "Online Batterien" }
+        },
+        "binary_sensor": {
+            "online":                       { "name": "Online" },
+            "ems_bp_selfcheck":             { "name": "Batterie-Selbsttest Fehler" },
+            "ems_mppt_selfcheck":           { "name": "MPPT-Selbsttest Fehler" },
+            "ems_mppt_run_state":           { "name": "MPPT in Betrieb" },
+            "epo_switch_state":             { "name": "EPO-Schalter aktiv" },
+            "auto_detect_start_power":      { "name": "Autom. Startleistungserkennung" },
+            "pv_to_inv_directly":           { "name": "PV direkt zum Wechselrichter" }
+        },
+        "button": {
+            "system_reboot":                { "name": "System neu starten" },
+            "system_selfcheck":             { "name": "Selbsttest ausführen" }
+        },
+        "number": {
+            "backup_reserve_soc":           { "name": "Backup-Reserve Ladezustand" },
+            "fast_chg_max_soc":             { "name": "Schnellladen Obergrenze" },
+            "charger_power_limit":          { "name": "Ladebox Leistungslimit" },
+            "grid_in_pwr_limit":            { "name": "Netzbezug Leistungslimit" },
+            "charger_amp_limit":            { "name": "Ladestrom Limit" }
+        },
+        "select": {
+            "charger_mode": {
+                "name": "Lademodus",
+                "state": {
+                    "auto": "Automatisch",
+                    "fast": "Schnell",
+                    "eco":  "Öko"
+                }
+            },
+            "backup_mode": {
+                "name": "Backup-Modus",
+                "state": {
+                    "self_use": "Eigenverbrauch",
+                    "backup":   "Backup",
+                    "off":      "Aus"
+                }
+            }
+        },
+        "switch": {
+            "charger_enable":               { "name": "Ladebox" },
+            "grid_charge_enable":           { "name": "Netzladung" },
+            "system_pause":                 { "name": "System pausieren" },
+            "battery_heat":                 { "name": "Batterieheizung" },
+            "charger_auto_chg":             { "name": "Automatisches Laden" }
+        }
+    }
+}

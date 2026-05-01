@@ -1,0 +1,193 @@
+{
+  "title": "EcoFlow PowerOcean",
+  "config": {
+    "step": {
+      "user": {
+        "description": "[%key:common::config_flow::data::description%]",
+        "data": {
+          "email": "[%key:common::config_flow::data::email%]",
+          "password": "[%key:common::config_flow::data::password%]"
+        }
+      },
+      "pick_device": {
+        "description": "[%key:common::config_flow::data::description%]",
+        "data": {
+          "device_selection": "Discovered device",
+          "device_id": "[%key:common::config_flow::data::device_id%]",
+          "model_id": "[%key:common::config_flow::data::model_id%]"
+        }
+      },
+      "device_options": {
+        "description": "[%key:common::config_flow::data::description%]",
+        "data": {
+          "friendly_name": "[%key:common::config_flow::data::custom_device_name%]",
+          "scan_interval": "[%key:common::config_flow::data::polling_interval%]"
+        }
+      },
+      "reconfigure": {
+        "description": "[%key:common::config_flow::reconfigure::description%]",
+        "data": {
+          "device_id": "[%key:common::config_flow::data::device_id%]",
+          "email": "[%key:common::config_flow::data::email%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "model_id": "[%key:common::config_flow::data::model_id%]"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "reconfiguration_completed": "[%key:common::config_flow::abort::reconfiguration_completed%]",
+      "already_imported": "This device has already been imported from the original PowerOcean integration."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "[%key:common::config_flow::options::description%]",
+        "data": {
+          "friendly_name": "[%key:common::config_flow::data::custom_device_name%]",
+          "scan_interval": "[%key:common::config_flow::data::polling_interval%]"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "sys_load_pwr":                   { "name": "House Load Power" },
+      "sys_grid_pwr":                   { "name": "Grid Power (system)" },
+      "mppt_pwr":                       { "name": "Solar Power (MPPT)" },
+      "bp_pwr":                         { "name": "Battery Power" },
+      "dcdc_pwr":                       { "name": "DC-DC Power" },
+      "pcs_act_pwr":                    { "name": "Inverter Active Power" },
+      "pcs_meter_power":                { "name": "PCS Meter Power" },
+      "house_power":                    { "name": "House Power (calculated)" },
+      "grid_power":                     { "name": "Grid Power" },
+      "grid_to_battery":                { "name": "Grid to Battery" },
+      "grid_to_house":                  { "name": "Grid to House" },
+      "battery_to_house":               { "name": "Battery to House" },
+      "solar_to_battery":               { "name": "Solar to Battery" },
+      "solar_to_grid":                  { "name": "Solar to Grid" },
+      "solar_to_house":                 { "name": "Solar to House" },
+      "mppt_pv_pwr_total":              { "name": "Solar Total Power" },
+      "pv1_pwr":                        { "name": "PV String 1 Power" },
+      "pv2_pwr":                        { "name": "PV String 2 Power" },
+      "pv3_pwr":                        { "name": "PV String 3 Power" },
+      "pv_inv_pwr":                     { "name": "PV Inverter Power" },
+      "other_pv_pwr":                   { "name": "Other PV Power" },
+      "load_pwr":                       { "name": "Load Power" },
+      "heating_power":                  { "name": "Heating Power" },
+      "today_electricity_generation":   { "name": "Solar Yield Today" },
+      "month_electricity_generation":   { "name": "Solar Yield This Month" },
+      "year_electricity_generation":    { "name": "Solar Yield This Year" },
+      "total_electricity_generation":   { "name": "Solar Yield Total" },
+      "grid_out_day_energy":            { "name": "Grid Export Today" },
+      "grid_in_day_energy":             { "name": "Grid Import Today" },
+      "bp_in_day_energy":               { "name": "Battery Charge Today" },
+      "bp_out_day_energy":              { "name": "Battery Discharge Today" },
+      "load_day_energy":                { "name": "Load Energy Today" },
+      "pv_in_day_energy":               { "name": "Solar Yield Today (EMS)" },
+      "bp_total_chg_energy":            { "name": "Battery Lifetime Charged" },
+      "bp_total_dsg_energy":            { "name": "Battery Lifetime Discharged" },
+      "bp_accu_chg_energy":             { "name": "Battery Accumulated Charge" },
+      "bp_accu_dsg_energy":             { "name": "Battery Accumulated Discharge" },
+      "bp_soc":                         { "name": "Battery State of Charge" },
+      "bp_soh":                         { "name": "Battery State of Health" },
+      "bp_vol":                         { "name": "Battery Voltage" },
+      "bp_amp":                         { "name": "Battery Current" },
+      "bp_remain_watth":                { "name": "Battery Remaining Energy" },
+      "bp_cycles":                      { "name": "Battery Cycles" },
+      "bp_env_temp":                    { "name": "Battery Ambient Temperature" },
+      "bp_min_cell_temp":               { "name": "Battery Min Cell Temperature" },
+      "bp_max_cell_temp":               { "name": "Battery Max Cell Temperature" },
+      "meter_a_voltage":                { "name": "Phase A Voltage" },
+      "meter_b_voltage":                { "name": "Phase B Voltage" },
+      "meter_c_voltage":                { "name": "Phase C Voltage" },
+      "meter_a_current":                { "name": "Phase A Current" },
+      "meter_b_current":                { "name": "Phase B Current" },
+      "meter_c_current":                { "name": "Phase C Current" },
+      "meter_power_factor":             { "name": "Power Factor" },
+      "ev_pwr":                         { "name": "EV Charger Power" },
+      "ev_charging_energy":             { "name": "EV Session Energy" },
+      "charging_pwr":                   { "name": "Charging Power" },
+      "hr_pwr":                         { "name": "Heating Rod Power" },
+      "hr_temp":                        { "name": "Water Temperature" },
+      "hr_target_temp":                 { "name": "Target Water Temperature" },
+      "module_sw_ver":                  { "name": "Firmware Version" },
+      "system_name":                    { "name": "System Name" },
+      "ems_bp_alive_num":               { "name": "Active Battery Modules" },
+      "bp_online_sum":                  { "name": "Online Batteries" }
+    },
+    "binary_sensor": {
+      "online":                         { "name": "Online" },
+      "ems_bp_selfcheck":               { "name": "Battery Self-check Fault" },
+      "ems_mppt_selfcheck":             { "name": "MPPT Self-check Fault" },
+      "ems_mppt_run_state":             { "name": "MPPT Running" },
+      "epo_switch_state":               { "name": "EPO Switch Active" },
+      "auto_detect_start_power":        { "name": "Auto-detect Start Power" },
+      "pv_to_inv_directly":             { "name": "PV Direct to Inverter" }
+    },
+    "button": {
+      "system_reboot":                  { "name": "Reboot System" },
+      "system_selfcheck":               { "name": "Run Self-check" }
+    },
+    "number": {
+      "backup_reserve_soc":             { "name": "Backup Reserve SoC" },
+      "fast_chg_max_soc":               { "name": "Fast Charge Upper Limit" },
+      "charger_power_limit":            { "name": "Charger Power Limit" },
+      "grid_in_pwr_limit":              { "name": "Grid Import Power Limit" },
+      "charger_amp_limit":              { "name": "Charger Current Limit" }
+    },
+    "select": {
+      "charger_mode": {
+        "name": "Charger Mode",
+        "state": {
+          "auto": "Automatic",
+          "fast": "Fast",
+          "eco": "Economy"
+        }
+      },
+      "backup_mode": {
+        "name": "Backup Mode",
+        "state": {
+          "self_use":  "Self-use",
+          "backup":    "Backup",
+          "off":       "Off"
+        }
+      }
+    },
+    "switch": {
+      "charger_enable":                 { "name": "EV Charger" },
+      "grid_charge_enable":             { "name": "Grid Charging" },
+      "system_pause":                   { "name": "System Pause" },
+      "battery_heat":                   { "name": "Battery Heating" },
+      "charger_auto_chg":               { "name": "Automatic EV Charging" }
+    }
+  },
+  "services": {
+    "set_tou_schedule": {
+      "name": "Set TOU Schedule",
+      "description": "Write a Time-of-Use strategy to the PowerOcean inverter.",
+      "fields": {
+        "schedule": {
+          "name": "Schedule",
+          "description": "TOU strategy JSON blob (cfgTouStrategy / cfgTouHoursStrategy)."
+        }
+      }
+    },
+    "set_grid_type": {
+      "name": "Set Grid Type",
+      "description": "Switch between single-phase and three-phase grid connection.",
+      "fields": {
+        "grid_type": {
+          "name": "Grid Type",
+          "description": "0 = single-phase, 1 = three-phase."
+        }
+      }
+    }
+  }
+}

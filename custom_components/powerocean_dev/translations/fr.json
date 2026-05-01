@@ -1,0 +1,170 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Saisissez vos identifiants EcoFlow. Les appareils PowerOcean associés seront détectés automatiquement.",
+                "data": {
+                    "email": "Adresse e-mail",
+                    "password": "Mot de passe"
+                }
+            },
+            "pick_device": {
+                "description": "Sélectionnez un appareil PowerOcean détecté, ou saisissez le numéro de série et le modèle manuellement si aucun appareil n'a été détecté.",
+                "data": {
+                    "device_selection": "Appareil détecté",
+                    "device_id": "Numéro de série de l'onduleur (tel qu'affiché dans l'application EcoFlow)",
+                    "model_id": "Modèle PowerOcean"
+                }
+            },
+            "device_options": {
+                "description": "Configurer les options de l'appareil :",
+                "data": {
+                    "friendly_name": "Nom de l'appareil",
+                    "scan_interval": "Intervalle de mise à jour (en secondes)"
+                }
+            },
+            "reconfigure": {
+                "description": "Mettre à jour les informations d'identification de votre compte PowerOcean.",
+                "data": {
+                    "device_id": "Numéro de série de l'onduleur (tel qu'affiché dans l'application EcoFlow)",
+                    "email": "Adresse e-mail",
+                    "password": "Mot de passe",
+                    "model_id": "Modèle PowerOcean"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Échec de la connexion. Veuillez vérifier vos identifiants.",
+            "invalid_auth": "Authentification invalide",
+            "unknown": "Erreur inattendue"
+        },
+        "abort": {
+            "already_configured": "Cet appareil est déjà configuré.",
+            "reconfiguration_completed": "Reconfiguration de l'appareil terminée. L'intégration sera rechargée.",
+            "already_imported": "Cet appareil a déjà été importé depuis l'intégration PowerOcean d'origine."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "description": "Ajuster les paramètres de l'intégration PowerOcean.",
+                "data": {
+                    "friendly_name": "Nom de l'appareil",
+                    "scan_interval": "Intervalle de mise à jour (en secondes)"
+                }
+            }
+        }
+    },
+    "entity": {
+        "sensor": {
+            "sys_load_pwr":                 { "name": "Puissance consommée" },
+            "sys_grid_pwr":                 { "name": "Puissance réseau (système)" },
+            "mppt_pwr":                     { "name": "Puissance solaire (MPPT)" },
+            "bp_pwr":                       { "name": "Puissance batterie" },
+            "dcdc_pwr":                     { "name": "Puissance DC-DC" },
+            "pcs_act_pwr":                  { "name": "Puissance active onduleur" },
+            "pcs_meter_power":              { "name": "Puissance compteur PCS" },
+            "house_power":                  { "name": "Puissance maison (calculée)" },
+            "grid_power":                   { "name": "Puissance réseau" },
+            "grid_to_battery":              { "name": "Réseau vers batterie" },
+            "grid_to_house":                { "name": "Réseau vers maison" },
+            "battery_to_house":             { "name": "Batterie vers maison" },
+            "solar_to_battery":             { "name": "Solaire vers batterie" },
+            "solar_to_grid":                { "name": "Solaire vers réseau" },
+            "solar_to_house":               { "name": "Solaire vers maison" },
+            "mppt_pv_pwr_total":            { "name": "Puissance solaire totale" },
+            "pv1_pwr":                      { "name": "Puissance chaîne PV 1" },
+            "pv2_pwr":                      { "name": "Puissance chaîne PV 2" },
+            "pv3_pwr":                      { "name": "Puissance chaîne PV 3" },
+            "pv_inv_pwr":                   { "name": "Puissance onduleur PV" },
+            "other_pv_pwr":                 { "name": "Autre puissance PV" },
+            "load_pwr":                     { "name": "Puissance de charge" },
+            "heating_power":                { "name": "Puissance de chauffage" },
+            "today_electricity_generation": { "name": "Production solaire aujourd'hui" },
+            "month_electricity_generation": { "name": "Production solaire ce mois" },
+            "year_electricity_generation":  { "name": "Production solaire cette année" },
+            "total_electricity_generation": { "name": "Production solaire totale" },
+            "grid_out_day_energy":          { "name": "Injection réseau aujourd'hui" },
+            "grid_in_day_energy":           { "name": "Soutirage réseau aujourd'hui" },
+            "bp_in_day_energy":             { "name": "Charge batterie aujourd'hui" },
+            "bp_out_day_energy":            { "name": "Décharge batterie aujourd'hui" },
+            "load_day_energy":              { "name": "Énergie de charge aujourd'hui" },
+            "pv_in_day_energy":             { "name": "Production solaire aujourd'hui (EMS)" },
+            "bp_total_chg_energy":          { "name": "Batterie charge totale vie" },
+            "bp_total_dsg_energy":          { "name": "Batterie décharge totale vie" },
+            "bp_accu_chg_energy":           { "name": "Batterie charge accumulée" },
+            "bp_accu_dsg_energy":           { "name": "Batterie décharge accumulée" },
+            "bp_soc":                       { "name": "État de charge batterie" },
+            "bp_soh":                       { "name": "État de santé batterie" },
+            "bp_vol":                       { "name": "Tension batterie" },
+            "bp_amp":                       { "name": "Courant batterie" },
+            "bp_remain_watth":              { "name": "Énergie batterie restante" },
+            "bp_cycles":                    { "name": "Cycles batterie" },
+            "bp_env_temp":                  { "name": "Température ambiante batterie" },
+            "bp_min_cell_temp":             { "name": "Température cellule min" },
+            "bp_max_cell_temp":             { "name": "Température cellule max" },
+            "meter_a_voltage":              { "name": "Tension phase A" },
+            "meter_b_voltage":              { "name": "Tension phase B" },
+            "meter_c_voltage":              { "name": "Tension phase C" },
+            "meter_a_current":              { "name": "Courant phase A" },
+            "meter_b_current":              { "name": "Courant phase B" },
+            "meter_c_current":              { "name": "Courant phase C" },
+            "meter_power_factor":           { "name": "Facteur de puissance" },
+            "ev_pwr":                       { "name": "Puissance borne de recharge" },
+            "ev_charging_energy":           { "name": "Énergie session recharge VE" },
+            "charging_pwr":                 { "name": "Puissance de recharge" },
+            "hr_pwr":                       { "name": "Puissance résistance chauffante" },
+            "hr_temp":                      { "name": "Température eau" },
+            "hr_target_temp":               { "name": "Température eau cible" },
+            "module_sw_ver":                { "name": "Version firmware" },
+            "system_name":                  { "name": "Nom du système" },
+            "ems_bp_alive_num":             { "name": "Modules batterie actifs" },
+            "bp_online_sum":                { "name": "Batteries en ligne" }
+        },
+        "binary_sensor": {
+            "online":                       { "name": "En ligne" },
+            "ems_bp_selfcheck":             { "name": "Défaut autotest batterie" },
+            "ems_mppt_selfcheck":           { "name": "Défaut autotest MPPT" },
+            "ems_mppt_run_state":           { "name": "MPPT en marche" },
+            "epo_switch_state":             { "name": "Interrupteur EPO actif" },
+            "auto_detect_start_power":      { "name": "Détection auto puissance démarrage" },
+            "pv_to_inv_directly":           { "name": "PV direct vers onduleur" }
+        },
+        "button": {
+            "system_reboot":                { "name": "Redémarrer le système" },
+            "system_selfcheck":             { "name": "Lancer l'autotest" }
+        },
+        "number": {
+            "backup_reserve_soc":           { "name": "SoC réserve de secours" },
+            "fast_chg_max_soc":             { "name": "Limite supérieure charge rapide" },
+            "charger_power_limit":          { "name": "Limite puissance chargeur" },
+            "grid_in_pwr_limit":            { "name": "Limite puissance import réseau" },
+            "charger_amp_limit":            { "name": "Limite courant de charge" }
+        },
+        "select": {
+            "charger_mode": {
+                "name": "Mode chargeur",
+                "state": {
+                    "auto": "Automatique",
+                    "fast": "Rapide",
+                    "eco":  "Économique"
+                }
+            },
+            "backup_mode": {
+                "name": "Mode de secours",
+                "state": {
+                    "self_use": "Autoconsommation",
+                    "backup":   "Secours",
+                    "off":      "Désactivé"
+                }
+            }
+        },
+        "switch": {
+            "charger_enable":               { "name": "Borne de recharge VE" },
+            "grid_charge_enable":           { "name": "Charge réseau" },
+            "system_pause":                 { "name": "Pause système" },
+            "battery_heat":                 { "name": "Chauffage batterie" },
+            "charger_auto_chg":             { "name": "Charge automatique VE" }
+        }
+    }
+}

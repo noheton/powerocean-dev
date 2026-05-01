@@ -1,7 +1,6 @@
-# The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
+# Based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
 
 target-version = "py313"
-
 
 [lint]
 select = [
@@ -10,34 +9,35 @@ select = [
 
 ignore = [
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
-    "D203", # no-blank-line-before-class (incompatible with formatter)
-    "D212", # multi-line-summary-first-line (incompatible with formatter)
+    "D203",   # no-blank-line-before-class (incompatible with formatter)
+    "D212",   # multi-line-summary-first-line (incompatible with formatter)
     "COM812", # incompatible with formatter
     "ISC001", # incompatible with formatter
     "EXE002",
 ]
 
 [lint.per-file-ignores]
-"custom_components/powerocean/__init__.py" = ["PLR2004", "ARG001"]
-"custom_components/powerocean/config_flow.py" = ["ARG004"]
-"custom_components/powerocean/parser.py" = ["PLR0913", "F841"]
-"custom_components/powerocean/types.py" = ["UP040"]
-"custom_components/powerocean/collector.py" = ["PLR0913", "ARG002"]
-"custom_components/powerocean/tests/*.py" = [
-    "S101", # assert allowed in tests
-    "PLR2004", # magic values
-    "F841", # unused variables
-    "ANN201", # missing return type
+"custom_components/powerocean_dev/__init__.py" = ["PLR2004", "ARG001", "PLR0915"]
+"custom_components/powerocean_dev/config_flow.py" = ["ARG004"]
+"custom_components/powerocean_dev/parser.py" = ["PLR0913", "PLR0912", "PLR2004", "E501", "F841"]
+"custom_components/powerocean_dev/types.py" = ["UP040"]
+"custom_components/powerocean_dev/collector.py" = ["PLR0913", "ARG002"]
+"custom_components/powerocean_dev/switch.py" = ["ARG002"]
+"custom_components/powerocean_dev/tests/*.py" = [
+    "S101",   # assert allowed in tests
+    "PLR2004",
+    "F841",
+    "ANN201",
     "ANN001",
     "D103",
     "ARG001",
 ]
-"custom_components/powerocean/tests/**/*.py" = [
-    "S101", # assert allowed in tests
-    "PLR2004", # magic values
-    "F841", # unused variables
-    "ANN201", # missing return type
-    "SLF001", # Private member accessed
+"custom_components/powerocean_dev/tests/**/*.py" = [
+    "S101",
+    "PLR2004",
+    "F841",
+    "ANN201",
+    "SLF001",
 ]
 "documentation/**/*.py" = ["ALL"]
 
