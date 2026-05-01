@@ -1,4 +1,5 @@
-"""PowerOcean button platform — momentary hardware actions.
+"""
+PowerOcean button platform — momentary hardware actions.
 
 APK sources:
   ACTION_W_ACTIVE_SYS_REBOOT   → param key activeSysReboot

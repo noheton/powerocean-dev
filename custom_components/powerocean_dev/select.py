@@ -1,4 +1,5 @@
-"""PowerOcean select platform — mode-selection parameters.
+"""
+PowerOcean select platform — mode-selection parameters.
 
 APK sources (CFG_*_FIELD_NUMBER → camelCase write key):
   CFG_SP_CHARGER_CHG_MODE_FIELD_NUMBER → cfgSpChargerChgMode
@@ -74,7 +75,8 @@ async def async_setup_entry(
     coordinator = data["coordinator"]
 
     entities = [
-        PowerOceanSelect(coordinator, description) for description in SELECT_DESCRIPTIONS
+        PowerOceanSelect(coordinator, description)
+        for description in SELECT_DESCRIPTIONS
     ]
     async_add_entities(entities)
 

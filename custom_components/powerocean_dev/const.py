@@ -30,10 +30,10 @@ PLATFORMS: list[Platform] = [
 ATTR_PRODUCT_DESCRIPTION = "Product Description"
 ATTR_PRODUCT_SERIAL = "Vendor Product Serial"
 
-# ── EcoFlow consumer API write endpoint (APK analysis: /iot-devices/device/setDeviceProperty) ──
+# ── EcoFlow consumer API write endpoint (APK: /iot-devices/device/setDeviceProperty) ──
 API_WRITE_ENDPOINT = "/iot-devices/device/setDeviceProperty"
 
-# ── Write-command parameter keys (camelCase proto field names from APK _FIELD_NUMBER analysis) ──
+# ── Write-command parameter keys (camelCase proto field names from APK analysis) ──
 # Backup / energy management
 PARAM_BACKUP_RESERVE_SOC = "cfgBackupReverseSoc"
 PARAM_BACKUP_SOC_VPP = "cfgBackupSocVpp"

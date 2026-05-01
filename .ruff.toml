@@ -17,11 +17,12 @@ ignore = [
 ]
 
 [lint.per-file-ignores]
-"custom_components/powerocean_dev/__init__.py" = ["PLR2004", "ARG001"]
+"custom_components/powerocean_dev/__init__.py" = ["PLR2004", "ARG001", "PLR0915"]
 "custom_components/powerocean_dev/config_flow.py" = ["ARG004"]
-"custom_components/powerocean_dev/parser.py" = ["PLR0913", "F841"]
+"custom_components/powerocean_dev/parser.py" = ["PLR0913", "PLR0912", "PLR2004", "E501", "F841"]
 "custom_components/powerocean_dev/types.py" = ["UP040"]
 "custom_components/powerocean_dev/collector.py" = ["PLR0913", "ARG002"]
+"custom_components/powerocean_dev/switch.py" = ["ARG002"]
 "custom_components/powerocean_dev/tests/*.py" = [
     "S101",   # assert allowed in tests
     "PLR2004",

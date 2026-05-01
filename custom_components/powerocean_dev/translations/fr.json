@@ -2,11 +2,17 @@
     "config": {
         "step": {
             "user": {
-                "description": "Veuillez saisir ci-dessous les informations de votre appareil PowerOcean :",
+                "description": "Saisissez vos identifiants EcoFlow. Les appareils PowerOcean associés seront détectés automatiquement.",
                 "data": {
-                    "device_id": "Numéro de série de l'onduleur (tel qu'affiché dans l'application EcoFlow)",
                     "email": "Adresse e-mail",
-                    "password": "Mot de passe",
+                    "password": "Mot de passe"
+                }
+            },
+            "pick_device": {
+                "description": "Sélectionnez un appareil PowerOcean détecté, ou saisissez le numéro de série et le modèle manuellement si aucun appareil n'a été détecté.",
+                "data": {
+                    "device_selection": "Appareil détecté",
+                    "device_id": "Numéro de série de l'onduleur (tel qu'affiché dans l'application EcoFlow)",
                     "model_id": "Modèle PowerOcean"
                 }
             },
@@ -34,7 +40,8 @@
         },
         "abort": {
             "already_configured": "Cet appareil est déjà configuré.",
-            "reconfiguration_completed": "Reconfiguration de l'appareil terminée. L'intégration sera rechargée."
+            "reconfiguration_completed": "Reconfiguration de l'appareil terminée. L'intégration sera rechargée.",
+            "already_imported": "Cet appareil a déjà été importé depuis l'intégration PowerOcean d'origine."
         }
     },
     "options": {

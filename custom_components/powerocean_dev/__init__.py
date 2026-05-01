@@ -19,9 +19,11 @@ Functions:
 - update_listener: Reload a config entry when its options are updated.
 """
 
+import json
 from datetime import timedelta
+
 import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (
     CONF_DEVICE_ID,
     CONF_EMAIL,
@@ -67,6 +69,36 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         bool: True if setup was successful, False otherwise.
 
     """
+    # ── Auto-import from legacy powerocean domain ─────────────────────────────
+    # When powerocean_dev is first loaded and the original powerocean integration
+    # has existing entries, migrate them without user interaction.
+    legacy_entries = hass.config_entries.async_entries("powerocean")
+    existing_dev_sns = {
+        e.data.get(CONF_DEVICE_ID) for e in hass.config_entries.async_entries(DOMAIN)
+    }
+    for old_entry in legacy_entries:
+        sn = old_entry.data.get(CONF_DEVICE_ID)
+        if sn and sn not in existing_dev_sns:
+            import_data = {
+                **old_entry.data,
+                CONF_FRIENDLY_NAME: old_entry.options.get(
+                    CONF_FRIENDLY_NAME, DEFAULT_NAME
+                ),
+                CONF_SCAN_INTERVAL: old_entry.options.get(
+                    CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+                ),
+            }
+            LOGGER.info(
+                "Scheduling import of legacy powerocean entry for device %s", sn
+            )
+            hass.async_create_task(
+                hass.config_entries.flow.async_init(
+                    DOMAIN,
+                    context={"source": SOURCE_IMPORT},
+                    data=import_data,
+                )
+            )
+
     try:
         # Integration laden
         integration = await async_get_integration(hass, DOMAIN)
@@ -191,7 +223,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_set_tou_schedule(call: ServiceCall) -> None:
         schedule_raw: str = call.data["schedule"]
         try:
-            import json
             schedule_obj = json.loads(schedule_raw)
         except (ValueError, TypeError) as exc:
             msg = f"Invalid TOU schedule JSON: {exc}"

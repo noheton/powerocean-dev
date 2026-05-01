@@ -1,4 +1,5 @@
-"""PowerOcean switch platform — on/off controllable parameters.
+"""
+PowerOcean switch platform — on/off controllable parameters.
 
 APK sources (CFG_*_FIELD_NUMBER → camelCase write key):
   CFG_SP_CHARGER_CHG_OPEN_FIELD_NUMBER          → cfgSpChargerChgOpen
@@ -6,7 +7,7 @@ APK sources (CFG_*_FIELD_NUMBER → camelCase write key):
   CFG_SYS_PAUSE_FIELD_NUMBER / CFG_SYS_RESUME_FIELD_NUMBER → cfgSysPause / cfgSysResume
 
 Equipment (doc/equipment.md):
-  12 kW PowerOcean, 2 × 5 kWh batteries, 11 kW PowerPulse (AC31ZEH4AG130052)
+  12 kW PowerOcean, 2 x 5 kWh batteries, 11 kW PowerPulse (AC31ZEH4AG130052)
 """
 
 from dataclasses import dataclass
@@ -42,6 +43,7 @@ class PowerOceanSwitchDescription(SwitchEntityDescription):
     off_params: dict[str, Any] = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
+        """Default None fields to empty dicts so callers can safely spread them."""
         if self.on_params is None:
             object.__setattr__(self, "on_params", {})
         if self.off_params is None:

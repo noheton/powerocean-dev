@@ -2,11 +2,17 @@
     "config": {
         "step": {
             "user": {
-                "description": "Please enter your PowerOcean device information below:",
+                "description": "Enter your EcoFlow account credentials. Connected PowerOcean devices will be detected automatically.",
                 "data": {
-                    "device_id": "Inverter serial number (as shown in the EcoFlow app)",
                     "email": "Email address",
-                    "password": "Password",
+                    "password": "Password"
+                }
+            },
+            "pick_device": {
+                "description": "Select a discovered PowerOcean device, or enter the serial number and model manually if no devices were detected.",
+                "data": {
+                    "device_selection": "Discovered device",
+                    "device_id": "Inverter serial number (as shown in the EcoFlow app)",
                     "model_id": "PowerOcean model"
                 }
             },
@@ -34,7 +40,8 @@
         },
         "abort": {
             "already_configured": "This device is already configured.",
-            "reconfiguration_completed": "Device reconfiguration completed. The integration will be reloaded."
+            "reconfiguration_completed": "Device reconfiguration completed. The integration will be reloaded.",
+            "already_imported": "This device has already been imported from the original PowerOcean integration."
         }
     },
     "options": {

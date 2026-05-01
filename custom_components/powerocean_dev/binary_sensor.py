@@ -30,7 +30,7 @@ BINARY_SENSOR_DESCRIPTIONS: dict[str, BinarySensorEntityDescription] = {
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
     ),
     # ── Self-check / fault states ────────────────────────────────────────────
-    # is_on = True means "problem detected" (device_class=PROBLEM follows this convention)
+    # is_on = True means "problem detected" (device_class=PROBLEM convention)
     "emsBpSelfcheckState": BinarySensorEntityDescription(
         key="emsBpSelfcheckState",
         translation_key="ems_bp_selfcheck",

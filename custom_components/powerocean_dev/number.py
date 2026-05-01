@@ -1,4 +1,5 @@
-"""PowerOcean number platform — numeric adjustable parameters.
+"""
+PowerOcean number platform — numeric adjustable parameters.
 
 APK sources (CFG_*_FIELD_NUMBER → camelCase write key):
   CFG_BACKUP_REVERSE_SOC_FIELD_NUMBER  → cfgBackupReverseSoc
@@ -7,7 +8,7 @@ APK sources (CFG_*_FIELD_NUMBER → camelCase write key):
   CFG_SYS_GRID_IN_PWR_LIMIT_FIELD_NUMBER   → cfgSysGridInPwrLimit
 
 Equipment (doc/equipment.md):
-  12 kW PowerOcean inverter + 2 × 5 kWh batteries + 11 kW PowerPulse
+  12 kW PowerOcean inverter + 2 x 5 kWh batteries + 11 kW PowerPulse
 """
 
 from dataclasses import dataclass
@@ -112,7 +113,7 @@ NUMBER_DESCRIPTIONS: list[PowerOceanNumberDescription] = [
     # ── PowerPulse device-battery charge amp limit ───────────────────────────
     # ACTION_W_CFG_SP_CHARGER_DEV_BATT_CHG_AMP_LIMIT
     # Sets the maximum AC charging current (A) for the 11 kW PowerPulse.
-    # Range 6–32 A matches IEC 61851 Mode 2/3 AC charging standards.
+    # Range 6-32 A matches IEC 61851 Mode 2/3 AC charging standards.
     PowerOceanNumberDescription(
         key="charger_amp_limit",
         translation_key="charger_amp_limit",
@@ -162,7 +163,7 @@ class PowerOceanNumber(CoordinatorEntity, NumberEntity):
 
     @property
     def native_value(self) -> float | None:
-        """Return the last value set by the user (cached until next refresh confirms it)."""
+        """Return cached value (updated after each successful write)."""
         return self._cached_value
 
     async def async_set_native_value(self, value: float) -> None:

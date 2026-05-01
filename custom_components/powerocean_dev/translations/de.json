@@ -2,11 +2,17 @@
     "config": {
         "step": {
             "user": {
-                "description": "Bitte geben Sie unten Ihre PowerOcean-Geräteinformationen ein:",
+                "description": "EcoFlow-Zugangsdaten eingeben. Verbundene PowerOcean-Geräte werden automatisch erkannt.",
                 "data": {
-                    "device_id": "Seriennummer des Wechselrichters (wie in der EcoFlow-App angezeigt)",
                     "email": "E-Mail-Adresse",
-                    "password": "Passwort",
+                    "password": "Passwort"
+                }
+            },
+            "pick_device": {
+                "description": "Ein erkanntes PowerOcean-Gerät auswählen oder Seriennummer und Modell manuell eingeben, falls keine Geräte erkannt wurden.",
+                "data": {
+                    "device_selection": "Erkanntes Gerät",
+                    "device_id": "Seriennummer des Wechselrichters (wie in der EcoFlow-App angezeigt)",
                     "model_id": "PowerOcean-Modell"
                 }
             },
@@ -34,7 +40,8 @@
         },
         "abort": {
             "already_configured": "Dieses Gerät ist bereits konfiguriert.",
-            "reconfiguration_completed": "Gerätekonfiguration wurde aktualisiert. Die Integration wird neu geladen."
+            "reconfiguration_completed": "Gerätekonfiguration wurde aktualisiert. Die Integration wird neu geladen.",
+            "already_imported": "Dieses Gerät wurde bereits aus der ursprünglichen PowerOcean-Integration importiert."
         }
     },
     "options": {
