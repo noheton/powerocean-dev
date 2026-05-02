@@ -140,6 +140,7 @@ Key log messages to look for:
 
 ## Credits
 
+- Primary inspiration: [niltrip/powerocean](https://github.com/niltrip/powerocean)
 - Original concept: [tolwi/hassio-ecoflow-cloud](https://github.com/tolwi/hassio-ecoflow-cloud)
 - Inspired by: [evercape/hass-resol-KM2](https://github.com/evercape/hass-resol-KM2)
 - Thanks to the Home Assistant community and all contributors
