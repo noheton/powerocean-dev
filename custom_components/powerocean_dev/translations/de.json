@@ -119,7 +119,30 @@
             "module_sw_ver":                { "name": "Firmware-Version" },
             "system_name":                  { "name": "Systemname" },
             "ems_bp_alive_num":             { "name": "Aktive Batteriemodule" },
-            "bp_online_sum":                { "name": "Online Batterien" }
+            "bp_online_sum":                { "name": "Online Batterien" },
+            "pp_charging_status":           { "name": "Ladestatus" },
+            "pp_work_mode":                 { "name": "Lademodus (Roh)" },
+            "pp_charge_target":             { "name": "Ladeziel" },
+            "pp_time_to_use_car":           { "name": "Zeit bis Fahrzeugnutzung" },
+            "pp_allocated_power":           { "name": "Zugewiesene Leistung" },
+            "pp_feed_pwr_cap":              { "name": "Max. Einspeiseleistung" },
+            "pp_soc_cur":                   { "name": "Fahrzeug-Ladezustand" },
+            "pp_switch_bits":               { "name": "Steuerflags" },
+            "pp_user_current_set":          { "name": "Benutzer-Stromeinstellung" },
+            "pp_current_ouput_max":         { "name": "Maximaler Ausgangsstrom" },
+            "pp_dev_sn":                    { "name": "Geräteseriennummer" },
+            "pp_start_state":               { "name": "Startzustand" },
+            "pp_real_power_lock":           { "name": "Echte Leistungssperre" },
+            "pp_ref_power":                 { "name": "Referenzleistung" },
+            "pp_pcl_pwr_base":              { "name": "PCL-Basisleistung" },
+            "pp_ev_onoff_set":              { "name": "Ladebox Ein/Aus" },
+            "pp_ev_curr_set":               { "name": "Stromeinstellung (Roh)" },
+            "pp_ev_user_manual":            { "name": "Manueller Modus" },
+            "pp_use_grid_first":            { "name": "Netz-Vorrang-Modus" },
+            "pp_ev_sn":                     { "name": "Ladebox-Seriennummer" },
+            "pp_online_bits":               { "name": "Online-Flags" },
+            "pp_charge_vehicle_id":         { "name": "Fahrzeug-ID" },
+            "pp_order_start_timestamp":     { "name": "Sitzungsstart (Epoch s)" }
         },
         "binary_sensor": {
             "online":                       { "name": "Online" },
@@ -165,6 +188,28 @@
             "system_pause":                 { "name": "System pausieren" },
             "battery_heat":                 { "name": "Batterieheizung" },
             "charger_auto_chg":             { "name": "Automatisches Laden" }
+        }
+    },
+    "services": {
+        "set_tou_schedule": {
+            "name": "TOU-Zeitplan setzen",
+            "description": "Schreibt eine Tageszeit-Strategie (TOU) in den PowerOcean-Wechselrichter.",
+            "fields": {
+                "schedule": {
+                    "name": "Zeitplan",
+                    "description": "TOU-Strategie als JSON-Objekt."
+                }
+            }
+        },
+        "set_grid_type": {
+            "name": "Netztyp setzen",
+            "description": "Wechselt zwischen Einphasen- und Dreiphasennetzanschluss.",
+            "fields": {
+                "grid_type": {
+                    "name": "Netztyp",
+                    "description": "0 = Einphasig, 1 = Dreiphasig."
+                }
+            }
         }
     }
 }
