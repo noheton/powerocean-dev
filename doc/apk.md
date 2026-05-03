@@ -184,7 +184,57 @@ JT303BleCommand.kt + JT303DataHelper.kt + JT303DataParseHelper.kt + JT303MergeDa
 
 Full list in [doc/logs/raw_proto_files.txt](logs/raw_proto_files.txt).
 
-The presence of `cp307_ocpp.proto` is notable — **CP307 supports OCPP** (Open Charge Point Protocol 1.6/2.0), confirming why `/iot-service/ac305/charge/ocpp/domain` exists.
+The presence of `cp307_ocpp.proto` is notable — **CP307 supports OCPP** (Open Charge Point Protocol 1.6/2.0), confirming why `/iot-service/ac305/charge/ocpp/domain` exists. See [OCPP 1.6 support](#ocpp-16-support-cp307--powerpulse) below.
+
+## OCPP 1.6 support (CP307 / PowerPulse)
+
+**Status:** Confirmed at the protocol level via decompiled artifacts; request/response schemas not yet captured (the OCPP backend setup screen in the EcoFlow app appears to be integrator-only and could not be exercised by the current reverse-engineering pass).
+
+### Evidence
+
+- **Proto file** `cp307_ocpp.proto` ships with the app (see [doc/logs/raw_proto_files.txt](logs/raw_proto_files.txt) line 19) — the CP307 firmware speaks OCPP natively. CP307 is the model number behind the **PowerPulse** 11 kW EV charger.
+- **Cloud endpoints** discovered ([doc/logs/raw_endpoints.txt](logs/raw_endpoints.txt)):
+  - `GET /iot-service/ac305/charge/ocpp/domain` — likely returns the OCPP central-system URL the charger should connect to.
+  - `/provider-service/app/ocppPlatformConfig` and `/ocppPlatformConfig/list` — likely CRUD for an account-level catalog of OCPP backends that get assigned to a `sn`.
+- App layout `jt303_charger_307_layout` references CP307 (apk.md line 138).
+
+### What this means for users
+
+The CP307/PowerPulse hardware can be **redirected from the EcoFlow cloud to a third-party OCPP 1.6-J central system** — for example the [HACS `ocpp` integration](https://github.com/lbbrhzn/ocpp), which runs an OCPP central-system inside Home Assistant. Once redirected, the charger is controllable directly via OCPP `RemoteStartTransaction` / `ChangeConfiguration` / `SetChargingProfile` etc., bypassing the EcoFlow cloud entirely.
+
+**Caveat:** switching to a third-party OCPP backend likely *disables* EcoFlow-cloud control, including the `cfgSpCharger*` writes this integration uses today. This is a one-way switch with consequences; the config flow must warn users.
+
+### Open questions (need decompiler access to resolve)
+
+1. **Request schema for `ocppPlatformConfig`.** Field names guessed from OCPP 1.6 onboarding: `{url, cpId, authKey?, vendor?, model?, sn}` — needs confirmation.
+2. **Per-device or per-account.** The `/list` endpoint suggests account-level platforms with a separate "assign to SN" call. To confirm, dump the DTO classes.
+3. **Required permissions.** The screen is likely gated on a backend role flag (integrator/installer). If so, the endpoint may reject ordinary user tokens.
+4. **Reversibility.** Is there a "reset to EcoFlow cloud" call, or does the user need a factory reset?
+
+A grep/investigation playbook for these is in [doc/ocpp-investigation.md](ocpp-investigation.md).
+
+### Sketch of HA integration (config flow design — NOT yet implemented)
+
+Add an **options flow** to the existing PowerOcean config entry, not a new entry (reuses existing credentials):
+
+```
+PowerOcean → Configure → OCPP Backend
+  ─────────────────────────────────────
+  ( ) EcoFlow Cloud (default)
+  ( ) Custom OCPP 1.6 Server
+        URL:       [ws://homeassistant.local:9000/]
+        CP ID:     [EcoFlowPP1]
+        Auth key:  [optional, OCPP 1.6 security profile 1]
+  ─────────────────────────────────────
+  ⚠ Switching to a custom server will disable
+    EcoFlow app control and most PowerPulse
+    entities in this integration. The change
+    is sticky until you switch back.
+```
+
+Backed by a single service `powerocean_dev.set_ocpp_backend(sn, url, cp_id, auth_key)` so it's also scriptable.
+
+**Implementation gate:** do not ship until the `ocppPlatformConfig` request schema is captured — guessing risks bricking users' chargers.
 
 ## NEW: Writable Configuration Surface (496 unique ACTION_W_*)
 
