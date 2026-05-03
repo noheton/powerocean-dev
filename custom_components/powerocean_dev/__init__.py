@@ -32,7 +32,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
 )
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
 from homeassistant.exceptions import (
     ConfigEntryNotReady,
     HomeAssistantError,
@@ -55,6 +55,35 @@ from .const import (
 from .coordinator import PowerOceanCoordinator
 from .ecoflow import HAEcoflowApi
 from .parser import EcoflowParser
+
+
+def _resolve_powerpulse_sn(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
+    """Return the PowerPulse serial number stored on the entry's endpoints."""
+    endpoints = hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("endpoints", {})
+    inverter_sn = entry.data.get(CONF_DEVICE_ID)
+    for ep_id, ep in endpoints.items():
+        if ep.serial != inverter_sn and any(
+            r in ep_id for r in ("EDEV_PARAM_REPORT", "EVCHARGING_REPORT")
+        ):
+            return ep.serial
+    return None
+
+
+def _build_ocpp_bind_req(
+    data: dict, sn: str, enabled: bool
+) -> dict[str, object]:
+    """Construct a CPOcppBindReq dict from service data."""
+    return {
+        "platformCode": data["platform_code"],
+        "platformName": data["platform_name"],
+        "platformType": data["platform_type"],
+        "backendUrl": data["backend_url"],
+        "secureUrl": data["secure_url"],
+        "authKey": data["auth_key"],
+        "sortOrder": data["sort_order"],
+        "isEnabled": 1 if enabled else 0,
+        "sn": sn,
+    }
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -246,6 +275,81 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         await api_entry.async_set_property({"cfgGridType": grid_type})
 
+    # ── Service: ocpp_list_backends ───────────────────────────────────────────
+    # Returns the OCPP platform-config catalog from the EcoFlow account.
+    # Useful for inspecting existing backends and discovering platform_type
+    # enum values empirically.
+    async def handle_ocpp_list_backends(call: ServiceCall) -> ServiceResponse:
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        if api_entry is None:
+            msg = "PowerOcean API not available"
+            raise HomeAssistantError(msg)
+        return {"backends": await api_entry.async_ocpp_list_backends()}
+
+    # ── Service: ocpp_register_backend ────────────────────────────────────────
+    # POSTs a CPOcppBindReq with isEnabled=1. Updates the EcoFlow-side catalog
+    # only — does NOT yet redirect the charger at runtime (that needs the
+    # vendorInfoSet proto write).
+    async def handle_ocpp_register_backend(call: ServiceCall) -> ServiceResponse:
+        sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
+        if not sn:
+            msg = "PowerPulse serial number not found; pass 'sn' explicitly"
+            raise HomeAssistantError(msg)
+        body = _build_ocpp_bind_req(call.data, sn=sn, enabled=True)
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        return await api_entry.async_ocpp_post_backend(body)
+
+    # ── Service: ocpp_disable_backend ─────────────────────────────────────────
+    # POSTs the same record with isEnabled=0 (the documented "tidy" path).
+    async def handle_ocpp_disable_backend(call: ServiceCall) -> ServiceResponse:
+        sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
+        if not sn:
+            msg = "PowerPulse serial number not found; pass 'sn' explicitly"
+            raise HomeAssistantError(msg)
+        body = _build_ocpp_bind_req(call.data, sn=sn, enabled=False)
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        return await api_entry.async_ocpp_post_backend(body)
+
+    _ocpp_bind_schema = vol.Schema(
+        {
+            vol.Required("backend_url"): cv.string,
+            vol.Optional("sn"): cv.string,
+            vol.Optional("platform_code", default="lbbrhzn"): cv.string,
+            vol.Optional("platform_name", default="HA lbbrhzn/ocpp"): cv.string,
+            vol.Optional("platform_type", default=0): vol.Coerce(int),
+            vol.Optional("secure_url", default=""): cv.string,
+            vol.Optional("auth_key", default=""): cv.string,
+            vol.Optional("sort_order", default=0): vol.Coerce(int),
+        }
+    )
+
+    if not hass.services.has_service(DOMAIN, "ocpp_list_backends"):
+        hass.services.async_register(
+            DOMAIN,
+            "ocpp_list_backends",
+            handle_ocpp_list_backends,
+            schema=vol.Schema({}),
+            supports_response=SupportsResponse.ONLY,
+        )
+
+    if not hass.services.has_service(DOMAIN, "ocpp_register_backend"):
+        hass.services.async_register(
+            DOMAIN,
+            "ocpp_register_backend",
+            handle_ocpp_register_backend,
+            schema=_ocpp_bind_schema,
+            supports_response=SupportsResponse.OPTIONAL,
+        )
+
+    if not hass.services.has_service(DOMAIN, "ocpp_disable_backend"):
+        hass.services.async_register(
+            DOMAIN,
+            "ocpp_disable_backend",
+            handle_ocpp_disable_backend,
+            schema=_ocpp_bind_schema,
+            supports_response=SupportsResponse.OPTIONAL,
+        )
+
     if not hass.services.has_service(DOMAIN, "set_tou_schedule"):
         hass.services.async_register(
             DOMAIN,
@@ -315,7 +419,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Remove domain-level services when the last entry is unloaded
     if not hass.data.get(DOMAIN):
-        for service_name in ("set_tou_schedule", "set_grid_type"):
+        for service_name in (
+            "set_tou_schedule",
+            "set_grid_type",
+            "ocpp_list_backends",
+            "ocpp_register_backend",
+            "ocpp_disable_backend",
+        ):
             if hass.services.has_service(DOMAIN, service_name):
                 hass.services.async_remove(DOMAIN, service_name)
 

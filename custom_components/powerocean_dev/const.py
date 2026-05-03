@@ -31,9 +31,8 @@ ATTR_PRODUCT_DESCRIPTION = "Product Description"
 ATTR_PRODUCT_SERIAL = "Vendor Product Serial"
 
 # ── OCPP backend (PowerPulse / CP307) ───────────────────────────────────────
-# Stored in the config entry options only. No writes are pushed to the
-# device until the EcoFlow `ocppPlatformConfig` request schema is captured;
-# see doc/ocpp-investigation.md.
+# Stored in the config entry options only. The actual catalog/runtime
+# writes are performed by the ocpp_* services in __init__.py.
 CONF_OCPP_ENABLED = "ocpp_enabled"
 CONF_OCPP_URL = "ocpp_url"
 CONF_OCPP_CP_ID = "ocpp_cp_id"

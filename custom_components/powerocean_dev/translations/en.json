@@ -232,6 +232,38 @@
                     "description": "0 = single-phase, 1 = three-phase."
                 }
             }
+        },
+        "ocpp_list_backends": {
+            "name": "OCPP — List Backends",
+            "description": "Read the OCPP platform-config catalog from your EcoFlow account."
+        },
+        "ocpp_register_backend": {
+            "name": "OCPP — Register Backend",
+            "description": "Register an OCPP 1.6 central system in the EcoFlow catalog. Catalog-only — does not redirect the charger at runtime.",
+            "fields": {
+                "backend_url":   { "name": "Backend URL",   "description": "ws:// or wss:// URL of the central system." },
+                "sn":            { "name": "Charger SN",    "description": "PowerPulse serial. Auto-detected if omitted." },
+                "platform_code": { "name": "Platform Code", "description": "Vendor token (default: lbbrhzn)." },
+                "platform_name": { "name": "Platform Name", "description": "Display name in the EcoFlow app." },
+                "platform_type": { "name": "Platform Type", "description": "Integer enum; inspect via ocpp_list_backends." },
+                "secure_url":    { "name": "Secure URL",    "description": "Optional wss:// for OCPP profiles 2/3." },
+                "auth_key":      { "name": "Auth Key",      "description": "OCPP 1.6 profile 1 token; empty for profile 0." },
+                "sort_order":    { "name": "Sort Order",    "description": "Display order in the catalog." }
+            }
+        },
+        "ocpp_disable_backend": {
+            "name": "OCPP — Disable Backend",
+            "description": "Mark an OCPP backend as inactive in the EcoFlow catalog (isEnabled=0).",
+            "fields": {
+                "backend_url":   { "name": "Backend URL",   "description": "Same URL used when registering." },
+                "sn":            { "name": "Charger SN",    "description": "PowerPulse serial. Auto-detected if omitted." },
+                "platform_code": { "name": "Platform Code" },
+                "platform_name": { "name": "Platform Name" },
+                "platform_type": { "name": "Platform Type" },
+                "secure_url":    { "name": "Secure URL" },
+                "auth_key":      { "name": "Auth Key" },
+                "sort_order":    { "name": "Sort Order" }
+            }
         }
     }
 }

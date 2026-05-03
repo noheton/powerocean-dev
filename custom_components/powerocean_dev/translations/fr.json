@@ -232,6 +232,38 @@
                     "description": "0 = monophasé, 1 = triphasé."
                 }
             }
+        },
+        "ocpp_list_backends": {
+            "name": "OCPP — Lister les backends",
+            "description": "Lit le catalogue OCPP de votre compte EcoFlow."
+        },
+        "ocpp_register_backend": {
+            "name": "OCPP — Enregistrer un backend",
+            "description": "Enregistre un système central OCPP 1.6 dans le catalogue EcoFlow. Catalogue uniquement — ne redirige pas le chargeur en runtime.",
+            "fields": {
+                "backend_url":   { "name": "URL du backend",     "description": "URL ws:// ou wss:// du système central." },
+                "sn":            { "name": "SN du chargeur",     "description": "Numéro de série PowerPulse. Auto-détecté si vide." },
+                "platform_code": { "name": "Code plateforme",    "description": "Jeton fournisseur (par défaut : lbbrhzn)." },
+                "platform_name": { "name": "Nom plateforme",     "description": "Nom affiché dans l'application EcoFlow." },
+                "platform_type": { "name": "Type plateforme",    "description": "Énumération entière ; à inspecter via ocpp_list_backends." },
+                "secure_url":    { "name": "URL sécurisée",      "description": "wss:// optionnel pour les profils OCPP 2/3." },
+                "auth_key":      { "name": "Clé d'authentification", "description": "Jeton profil 1 OCPP 1.6 ; vide pour profil 0." },
+                "sort_order":    { "name": "Ordre d'affichage",  "description": "Ordre d'affichage dans le catalogue." }
+            }
+        },
+        "ocpp_disable_backend": {
+            "name": "OCPP — Désactiver un backend",
+            "description": "Marque un backend OCPP comme inactif dans le catalogue EcoFlow (isEnabled=0).",
+            "fields": {
+                "backend_url":   { "name": "URL du backend",     "description": "Même URL qu'à l'enregistrement." },
+                "sn":            { "name": "SN du chargeur",     "description": "Numéro de série PowerPulse. Auto-détecté si vide." },
+                "platform_code": { "name": "Code plateforme" },
+                "platform_name": { "name": "Nom plateforme" },
+                "platform_type": { "name": "Type plateforme" },
+                "secure_url":    { "name": "URL sécurisée" },
+                "auth_key":      { "name": "Clé d'authentification" },
+                "sort_order":    { "name": "Ordre d'affichage" }
+            }
         }
     }
 }

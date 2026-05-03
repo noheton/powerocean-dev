@@ -7,8 +7,6 @@ Observed write-parameter field names (camelCase, sent via setDeviceProperty):
   cfgSpChargerChgPowLimit  — max charge power for the PowerPulse EV charger
   cfgSysGridInPwrLimit     — grid import power cap
 
-Equipment (doc/equipment.md):
-  12 kW PowerOcean inverter + 2 x 5 kWh batteries + 11 kW PowerPulse
 """
 
 from dataclasses import dataclass, field

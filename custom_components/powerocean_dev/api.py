@@ -285,6 +285,58 @@ class EcoflowApi:
                 result.append({"sn": sn, "product_type": pt, "name": name})
         return result
 
+    async def async_ocpp_list_backends(self) -> list[dict[str, Any]]:
+        """List OCPP platform-config records on the EcoFlow account.
+
+        GET /provider-service/app/ocppPlatformConfig/list
+        Returns the catalog the EcoFlow app shows under "OCPP backend"; each
+        record matches CPOcppPlatformBean.
+        """
+        if not self.api_host:
+            msg = "Region not detected; cannot list OCPP backends"
+            raise EcoflowApiError(msg)
+
+        session = await self._get_session()
+        url = f"https://{self.api_host}/provider-service/app/ocppPlatformConfig/list"
+        headers = {"authorization": f"Bearer {self.token}"}
+
+        async with asyncio.timeout(10):
+            async with session.get(url, headers=headers) as resp:
+                resp.raise_for_status()
+                payload = await resp.json()
+
+        data = payload.get("data", [])
+        return data if isinstance(data, list) else []
+
+    async def async_ocpp_post_backend(
+        self, body: dict[str, Any]
+    ) -> dict[str, Any]:
+        """POST a CPOcppBindReq record to the EcoFlow account catalog.
+
+        POST /provider-service/app/ocppPlatformConfig
+        Body shape: CPOcppBindReq. Set isEnabled=0 to deactivate an
+        existing backend (no DELETE exists).
+
+        NOTE: this updates the EcoFlow account catalog only. The actual
+        runtime handover to the new central system requires an additional
+        proto write (vendorInfoSet) which is not yet implemented.
+        """
+        if not self.api_host:
+            msg = "Region not detected; cannot write OCPP backend"
+            raise EcoflowApiError(msg)
+
+        session = await self._get_session()
+        url = f"https://{self.api_host}/provider-service/app/ocppPlatformConfig"
+        headers = {
+            "authorization": f"Bearer {self.token}",
+            "content-type": "application/json",
+        }
+
+        async with asyncio.timeout(10):
+            async with session.post(url, json=body, headers=headers) as resp:
+                resp.raise_for_status()
+                return await resp.json()
+
     async def async_set_property(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Write a device property via the EcoFlow consumer API.

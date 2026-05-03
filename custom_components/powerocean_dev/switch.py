@@ -7,8 +7,6 @@ Observed write-parameter field names (camelCase, sent via setDeviceProperty):
   cfgSysPause / cfgSysResume    — pause or resume the inverter
   cfgSpChargerAutoChgOpen       — PowerPulse automatic charge scheduling
 
-Equipment (doc/equipment.md):
-  12 kW PowerOcean, 2 x 5 kWh batteries, 11 kW PowerPulse
 """
 
 from dataclasses import dataclass, field

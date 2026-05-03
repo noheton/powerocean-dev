@@ -20,6 +20,149 @@ set_tou_schedule:
     device:
       integration: powerocean_dev
 
+ocpp_list_backends:
+  name: OCPP — List Backends
+  description: >
+    Read the OCPP platform-config catalog from your EcoFlow account
+    (GET /provider-service/app/ocppPlatformConfig/list). Returns each
+    record (id, sn, platformCode, backendUrl, isEnabled, ...). Useful
+    for inspecting existing backends and discovering platformType enum
+    values empirically.
+
+ocpp_register_backend:
+  name: OCPP — Register Backend
+  description: >
+    Register an OCPP 1.6 central system in your EcoFlow account catalog
+    for the PowerPulse charger. Updates the EcoFlow-side catalog only —
+    the charger is NOT redirected at runtime by this call alone. The
+    runtime handover requires a proto write (vendorInfoSet) that is not
+    yet shipped.
+  fields:
+    backend_url:
+      name: Backend URL
+      description: "ws:// or wss:// URL of the central system, e.g. ws://homeassistant.local:9000"
+      required: true
+      example: "ws://homeassistant.local:9000"
+      selector:
+        text:
+    sn:
+      name: Charger SN
+      description: PowerPulse serial number. Auto-detected from the integration entry if omitted.
+      required: false
+      selector:
+        text:
+    platform_code:
+      name: Platform Code
+      description: Vendor token. Default "lbbrhzn".
+      required: false
+      default: lbbrhzn
+      selector:
+        text:
+    platform_name:
+      name: Platform Name
+      description: Display name shown in the EcoFlow app.
+      required: false
+      default: HA lbbrhzn/ocpp
+      selector:
+        text:
+    platform_type:
+      name: Platform Type
+      description: Integer enum (values undocumented; inspect via ocpp_list_backends).
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 99
+    secure_url:
+      name: Secure URL
+      description: Optional wss:// URL for OCPP 1.6 security profiles 2/3. Leave empty otherwise.
+      required: false
+      default: ""
+      selector:
+        text:
+    auth_key:
+      name: Auth Key
+      description: OCPP 1.6 security profile 1 token. Leave empty for unauthenticated profile 0.
+      required: false
+      default: ""
+      selector:
+        text:
+    sort_order:
+      name: Sort Order
+      description: Display order in the EcoFlow app catalog.
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 99
+
+ocpp_disable_backend:
+  name: OCPP — Disable Backend
+  description: >
+    Mark an OCPP backend as inactive in the EcoFlow account catalog
+    (POST with isEnabled=0). No HTTP DELETE exists; this is the
+    documented "tidy" path.
+  fields:
+    backend_url:
+      name: Backend URL
+      description: "Same URL used when registering."
+      required: true
+      example: "ws://homeassistant.local:9000"
+      selector:
+        text:
+    sn:
+      name: Charger SN
+      description: PowerPulse serial number. Auto-detected if omitted.
+      required: false
+      selector:
+        text:
+    platform_code:
+      name: Platform Code
+      required: false
+      default: lbbrhzn
+      selector:
+        text:
+    platform_name:
+      name: Platform Name
+      required: false
+      default: HA lbbrhzn/ocpp
+      selector:
+        text:
+    platform_type:
+      name: Platform Type
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 99
+    secure_url:
+      name: Secure URL
+      required: false
+      default: ""
+      selector:
+        text:
+    auth_key:
+      name: Auth Key
+      required: false
+      default: ""
+      selector:
+        text:
+    sort_order:
+      name: Sort Order
+      required: false
+      default: 0
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 99
+
 set_grid_type:
   name: Set Grid Type
   description: >

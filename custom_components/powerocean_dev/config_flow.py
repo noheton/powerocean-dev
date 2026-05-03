@@ -469,10 +469,9 @@ class PowerOceanOptionsFlow(OptionsFlow):
         OCPP 1.6-J central system inside this Home Assistant instance
         (default ws://<ha-host>:9000, no auth).
 
-        Values are stored in the config entry options only — nothing is
-        pushed to the EcoFlow cloud or to the charger. The actual write
-        path is gated on capturing the request schema; see
-        doc/ocpp-investigation.md.
+        Values are stored in the config entry options only — the
+        actual EcoFlow catalog write is performed by the
+        powerocean_dev.ocpp_register_backend service.
         """
         if user_input is not None:
             return self.async_create_entry(
