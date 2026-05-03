@@ -106,6 +106,30 @@ ocpp_register_backend:
           min: 0
           max: 99
 
+ocpp_probe_runtime:
+  name: OCPP — Probe Runtime
+  description: >
+    Read-only diagnostic. Calls getDeviceProperty (and acquireQuotaAll as
+    fallback) against the PowerPulse charger and returns the raw payload,
+    so on-device OCPP field names can be discovered empirically. The
+    response is intended for inspection — no normalisation is applied.
+  fields:
+    sn:
+      name: Charger SN
+      description: PowerPulse serial number. Auto-detected if omitted.
+      required: false
+      selector:
+        text:
+    params:
+      name: Property Filter
+      description: >
+        Optional list of camelCase property keys to request. Leave empty
+        to dump all properties.
+      required: false
+      example: '["vendorInfoSet", "pileOcppParam"]'
+      selector:
+        object:
+
 ocpp_disable_backend:
   name: OCPP — Disable Backend
   description: >
