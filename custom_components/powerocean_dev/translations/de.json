@@ -52,6 +52,15 @@
                     "friendly_name": "Gerätename",
                     "scan_interval": "Aktualisierungsintervall (in Sekunden)"
                 }
+            },
+            "ocpp": {
+                "description": "OCPP-1.6-Backend für PowerPulse / CP307. Host: die lbbrhzn/ocpp HACS-Integration (https://github.com/lbbrhzn/ocpp) auf diesem Home Assistant. Standard-Endpunkt ws://<ha-host>:9000, ohne Auth. Eingaben werden nur gespeichert und derzeit nicht an die Wallbox übertragen (nur Lesephase).",
+                "data": {
+                    "ocpp_enabled":  "Eigenes OCPP-Backend verwenden (lbbrhzn/ocpp)",
+                    "ocpp_url":      "Zentralsystem-URL (z. B. ws://homeassistant.local:9000)",
+                    "ocpp_cp_id":    "Charge-Point-ID (muss der Charge Point Identity in lbbrhzn/ocpp entsprechen)",
+                    "ocpp_auth_key": "Auth-Key (OCPP 1.6 Security Profile 1, leer lassen für Standard)"
+                }
             }
         }
     },
@@ -120,7 +129,20 @@
             "system_name":                  { "name": "Systemname" },
             "ems_bp_alive_num":             { "name": "Aktive Batteriemodule" },
             "bp_online_sum":                { "name": "Online Batterien" },
-            "pp_charging_status":           { "name": "Ladestatus" },
+            "pp_charging_status": {
+                "name": "Ladestatus",
+                "state": {
+                    "EV_CHG_STS_AVAILABLE":      "Verfügbar",
+                    "EV_CHG_STS_PREPARING":      "Kabel verbunden",
+                    "EV_CHG_STS_CHARGING":       "Lädt",
+                    "EV_CHG_STS_SUSPENDED_EV":   "Pausiert durch Fahrzeug",
+                    "EV_CHG_STS_SUSPENDED_EVSE": "Pausiert durch Wallbox",
+                    "EV_CHG_STS_FINISHING":      "Wird beendet",
+                    "EV_CHG_STS_RESERVED":       "Reserviert",
+                    "EV_CHG_STS_UNAVAILABLE":    "Nicht verfügbar",
+                    "EV_CHG_STS_FAULTED":        "Störung"
+                }
+            },
             "pp_work_mode":                 { "name": "Lademodus (Roh)" },
             "pp_charge_target":             { "name": "Ladeziel" },
             "pp_time_to_use_car":           { "name": "Zeit bis Fahrzeugnutzung" },

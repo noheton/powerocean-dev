@@ -53,6 +53,15 @@
           "friendly_name": "[%key:common::config_flow::data::custom_device_name%]",
           "scan_interval": "[%key:common::config_flow::data::polling_interval%]"
         }
+      },
+      "ocpp": {
+        "description": "OCPP 1.6 backend for PowerPulse / CP307. Host: the lbbrhzn/ocpp HACS integration (https://github.com/lbbrhzn/ocpp) running on this Home Assistant. Default endpoint ws://<ha-host>:9000, no auth. Values are stored only and are not pushed to the charger yet (read-only stage).",
+        "data": {
+          "ocpp_enabled":  "Use custom OCPP backend (lbbrhzn/ocpp)",
+          "ocpp_url":      "Central system URL (e.g. ws://homeassistant.local:9000)",
+          "ocpp_cp_id":    "Charge Point ID (must match Charge Point Identity in lbbrhzn/ocpp)",
+          "ocpp_auth_key": "Auth key (OCPP 1.6 security profile 1, leave empty for default)"
+        }
       }
     }
   },
@@ -114,7 +123,20 @@
       "ev_pwr":                         { "name": "EV Charger Power" },
       "ev_charging_energy":             { "name": "EV Session Energy" },
       "charging_pwr":                   { "name": "Charging Power" },
-      "pp_charging_status":             { "name": "Charging Status" },
+      "pp_charging_status": {
+        "name": "Charging Status",
+        "state": {
+          "EV_CHG_STS_AVAILABLE":      "Available",
+          "EV_CHG_STS_PREPARING":      "Cable Connected",
+          "EV_CHG_STS_CHARGING":       "Charging",
+          "EV_CHG_STS_SUSPENDED_EV":   "Paused by Vehicle",
+          "EV_CHG_STS_SUSPENDED_EVSE": "Paused by Charger",
+          "EV_CHG_STS_FINISHING":      "Finishing",
+          "EV_CHG_STS_RESERVED":       "Reserved",
+          "EV_CHG_STS_UNAVAILABLE":    "Unavailable",
+          "EV_CHG_STS_FAULTED":        "Fault"
+        }
+      },
       "pp_work_mode":                   { "name": "Charging Mode (raw)" },
       "pp_charge_target":               { "name": "Charge Target" },
       "pp_time_to_use_car":             { "name": "Time to Car Use" },
