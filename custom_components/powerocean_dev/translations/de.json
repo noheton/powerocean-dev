@@ -232,6 +232,38 @@
                     "description": "0 = Einphasig, 1 = Dreiphasig."
                 }
             }
+        },
+        "ocpp_list_backends": {
+            "name": "OCPP — Backends auflisten",
+            "description": "Liest den OCPP-Plattformkatalog aus dem EcoFlow-Konto."
+        },
+        "ocpp_register_backend": {
+            "name": "OCPP — Backend registrieren",
+            "description": "Registriert ein OCPP-1.6-Zentralsystem im EcoFlow-Katalog. Nur Katalog — der Charger wird zur Laufzeit dadurch noch nicht umgeleitet.",
+            "fields": {
+                "backend_url":   { "name": "Backend-URL",    "description": "ws:// oder wss:// URL des Zentralsystems." },
+                "sn":            { "name": "Charger-SN",     "description": "PowerPulse-Seriennummer. Wird automatisch erkannt, wenn leer." },
+                "platform_code": { "name": "Plattform-Code", "description": "Hersteller-Token (Standard: lbbrhzn)." },
+                "platform_name": { "name": "Plattform-Name", "description": "Anzeigename in der EcoFlow-App." },
+                "platform_type": { "name": "Plattform-Typ",  "description": "Ganzzahl-Enum; per ocpp_list_backends prüfen." },
+                "secure_url":    { "name": "Secure-URL",     "description": "Optionale wss://-URL für OCPP-Profile 2/3." },
+                "auth_key":      { "name": "Auth-Key",       "description": "OCPP 1.6 Profil-1-Token; leer für Profil 0." },
+                "sort_order":    { "name": "Sortierung",     "description": "Reihenfolge im Katalog." }
+            }
+        },
+        "ocpp_disable_backend": {
+            "name": "OCPP — Backend deaktivieren",
+            "description": "Markiert ein OCPP-Backend im EcoFlow-Katalog als inaktiv (isEnabled=0).",
+            "fields": {
+                "backend_url":   { "name": "Backend-URL",    "description": "Gleiche URL wie bei der Registrierung." },
+                "sn":            { "name": "Charger-SN",     "description": "PowerPulse-Seriennummer. Wird automatisch erkannt, wenn leer." },
+                "platform_code": { "name": "Plattform-Code" },
+                "platform_name": { "name": "Plattform-Name" },
+                "platform_type": { "name": "Plattform-Typ" },
+                "secure_url":    { "name": "Secure-URL" },
+                "auth_key":      { "name": "Auth-Key" },
+                "sort_order":    { "name": "Sortierung" }
+            }
         }
     }
 }
