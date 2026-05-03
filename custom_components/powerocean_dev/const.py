@@ -30,6 +30,15 @@ PLATFORMS: list[Platform] = [
 ATTR_PRODUCT_DESCRIPTION = "Product Description"
 ATTR_PRODUCT_SERIAL = "Vendor Product Serial"
 
+# ── OCPP backend (PowerPulse / CP307) ───────────────────────────────────────
+# Stored in the config entry options only. No writes are pushed to the
+# device until the EcoFlow `ocppPlatformConfig` request schema is captured;
+# see doc/ocpp-investigation.md.
+CONF_OCPP_ENABLED = "ocpp_enabled"
+CONF_OCPP_URL = "ocpp_url"
+CONF_OCPP_CP_ID = "ocpp_cp_id"
+CONF_OCPP_AUTH_KEY = "ocpp_auth_key"
+
 # ── EcoFlow consumer API write endpoint ──────────────────────────────────────
 API_WRITE_ENDPOINT = "/iot-devices/device/setDeviceProperty"
 

@@ -42,6 +42,10 @@ from homeassistant.exceptions import (
 from homeassistant.helpers.selector import selector
 
 from .const import (
+    CONF_OCPP_AUTH_KEY,
+    CONF_OCPP_CP_ID,
+    CONF_OCPP_ENABLED,
+    CONF_OCPP_URL,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -417,12 +421,17 @@ class PowerOceanOptionsFlow(OptionsFlow):
       - Scan interval for periodic updates.
     """
 
+    def __init__(self) -> None:
+        """Initialize options flow state."""
+        self._init_input: dict[str, Any] = {}
+
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the options flow init step."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            self._init_input = user_input
+            return await self.async_step_ocpp()
 
         options = self.config_entry.options
 
@@ -447,6 +456,47 @@ class PowerOceanOptionsFlow(OptionsFlow):
                             }
                         }
                     ),
+                }
+            ),
+        )
+
+    async def async_step_ocpp(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Collect OCPP backend connection data for PowerPulse / CP307.
+
+        Values are stored in the config entry options only — nothing is
+        pushed to the EcoFlow cloud or to the charger. The actual write
+        path is gated on capturing the request schema; see
+        doc/ocpp-investigation.md.
+        """
+        if user_input is not None:
+            return self.async_create_entry(
+                title="",
+                data={**self._init_input, **user_input},
+            )
+
+        options = self.config_entry.options
+        return self.async_show_form(
+            step_id="ocpp",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_OCPP_ENABLED,
+                        default=options.get(CONF_OCPP_ENABLED, False),
+                    ): bool,
+                    vol.Optional(
+                        CONF_OCPP_URL,
+                        default=options.get(CONF_OCPP_URL, ""),
+                    ): str,
+                    vol.Optional(
+                        CONF_OCPP_CP_ID,
+                        default=options.get(CONF_OCPP_CP_ID, ""),
+                    ): str,
+                    vol.Optional(
+                        CONF_OCPP_AUTH_KEY,
+                        default=options.get(CONF_OCPP_AUTH_KEY, ""),
+                    ): str,
                 }
             ),
         )

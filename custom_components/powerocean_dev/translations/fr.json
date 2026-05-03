@@ -52,6 +52,15 @@
                     "friendly_name": "Nom de l'appareil",
                     "scan_interval": "Intervalle de mise à jour (en secondes)"
                 }
+            },
+            "ocpp": {
+                "description": "Backend OCPP 1.6 pour PowerPulse / CP307. Les valeurs sont uniquement enregistrées et ne sont pas encore envoyées à la borne (phase lecture seule).",
+                "data": {
+                    "ocpp_enabled":  "Utiliser un backend OCPP personnalisé",
+                    "ocpp_url":      "URL du système central (ws:// ou wss://)",
+                    "ocpp_cp_id":    "Identifiant Charge Point",
+                    "ocpp_auth_key": "Clé d'authentification (OCPP 1.6 profil 1, optionnelle)"
+                }
             }
         }
     },
@@ -120,7 +129,20 @@
             "system_name":                  { "name": "Nom du système" },
             "ems_bp_alive_num":             { "name": "Modules batterie actifs" },
             "bp_online_sum":                { "name": "Batteries en ligne" },
-            "pp_charging_status":           { "name": "Statut de charge" },
+            "pp_charging_status": {
+                "name": "Statut de charge",
+                "state": {
+                    "EV_CHG_STS_AVAILABLE":      "Disponible",
+                    "EV_CHG_STS_PREPARING":      "Câble connecté",
+                    "EV_CHG_STS_CHARGING":       "En charge",
+                    "EV_CHG_STS_SUSPENDED_EV":   "Suspendu par le véhicule",
+                    "EV_CHG_STS_SUSPENDED_EVSE": "Suspendu par la borne",
+                    "EV_CHG_STS_FINISHING":      "Terminaison",
+                    "EV_CHG_STS_RESERVED":       "Réservé",
+                    "EV_CHG_STS_UNAVAILABLE":    "Indisponible",
+                    "EV_CHG_STS_FAULTED":        "Défaut"
+                }
+            },
             "pp_work_mode":                 { "name": "Mode de charge (brut)" },
             "pp_charge_target":             { "name": "Cible de charge" },
             "pp_time_to_use_car":           { "name": "Temps avant utilisation du véhicule" },
