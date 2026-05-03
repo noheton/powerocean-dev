@@ -54,12 +54,12 @@
                 }
             },
             "ocpp": {
-                "description": "OCPP-1.6-Backend für PowerPulse / CP307. Eingaben werden nur gespeichert und derzeit nicht an die Wallbox übertragen (nur Lesephase).",
+                "description": "OCPP-1.6-Backend für PowerPulse / CP307. Host: die lbbrhzn/ocpp HACS-Integration (https://github.com/lbbrhzn/ocpp) auf diesem Home Assistant. Standard-Endpunkt ws://<ha-host>:9000, ohne Auth. Eingaben werden nur gespeichert und derzeit nicht an die Wallbox übertragen (nur Lesephase).",
                 "data": {
-                    "ocpp_enabled":  "Eigenes OCPP-Backend verwenden",
-                    "ocpp_url":      "Zentralsystem-URL (ws:// oder wss://)",
-                    "ocpp_cp_id":    "Charge-Point-ID",
-                    "ocpp_auth_key": "Auth-Key (OCPP 1.6 Security Profile 1, optional)"
+                    "ocpp_enabled":  "Eigenes OCPP-Backend verwenden (lbbrhzn/ocpp)",
+                    "ocpp_url":      "Zentralsystem-URL (z. B. ws://homeassistant.local:9000)",
+                    "ocpp_cp_id":    "Charge-Point-ID (muss der Charge Point Identity in lbbrhzn/ocpp entsprechen)",
+                    "ocpp_auth_key": "Auth-Key (OCPP 1.6 Security Profile 1, leer lassen für Standard)"
                 }
             }
         }

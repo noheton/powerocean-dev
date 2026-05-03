@@ -465,6 +465,10 @@ class PowerOceanOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         """Collect OCPP backend connection data for PowerPulse / CP307.
 
+        Target host is the lbbrhzn/ocpp HACS integration running an
+        OCPP 1.6-J central system inside this Home Assistant instance
+        (default ws://<ha-host>:9000, no auth).
+
         Values are stored in the config entry options only — nothing is
         pushed to the EcoFlow cloud or to the charger. The actual write
         path is gated on capturing the request schema; see
@@ -487,7 +491,9 @@ class PowerOceanOptionsFlow(OptionsFlow):
                     ): bool,
                     vol.Optional(
                         CONF_OCPP_URL,
-                        default=options.get(CONF_OCPP_URL, ""),
+                        default=options.get(
+                            CONF_OCPP_URL, "ws://homeassistant.local:9000"
+                        ),
                     ): str,
                     vol.Optional(
                         CONF_OCPP_CP_ID,
