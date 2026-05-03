@@ -310,14 +310,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
         return await api_entry.async_ocpp_post_backend(body)
 
+    # secure_url is required by the EcoFlow endpoint: posting an empty
+    # secureUrl returns code 1006 ("安全URL地址不能为空" / "Security URL
+    # cannot be empty"), even when backendUrl is a valid ws:// URL.
+    # platform_type=2 is the value observed for third-party (HA lbbrhzn)
+    # backends; platform_type=1 is reserved for the built-in SmartRed entry.
     _ocpp_bind_schema = vol.Schema(
         {
             vol.Required("backend_url"): cv.string,
+            vol.Required("secure_url"): cv.string,
             vol.Optional("sn"): cv.string,
             vol.Optional("platform_code", default="lbbrhzn"): cv.string,
             vol.Optional("platform_name", default="HA lbbrhzn/ocpp"): cv.string,
-            vol.Optional("platform_type", default=0): vol.Coerce(int),
-            vol.Optional("secure_url", default=""): cv.string,
+            vol.Optional("platform_type", default=2): vol.Coerce(int),
             vol.Optional("auth_key", default=""): cv.string,
             vol.Optional("sort_order", default=0): vol.Coerce(int),
         }

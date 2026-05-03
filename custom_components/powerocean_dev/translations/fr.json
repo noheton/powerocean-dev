@@ -112,6 +112,59 @@
             "bp_env_temp":                  { "name": "Température ambiante batterie" },
             "bp_min_cell_temp":             { "name": "Température cellule min" },
             "bp_max_cell_temp":             { "name": "Température cellule max" },
+            "bp_sn":                        { "name": "Numéro de série du module batterie" },
+            "bp_balance_state":             { "name": "Équilibrage des cellules" },
+            "bp_sys_state": {
+                "name": "État du système batterie",
+                "state": {
+                    "NORMAL_STATE": "Normal",
+                    "FAULT_STATE":  "Défaut",
+                    "WARN_STATE":   "Avertissement"
+                }
+            },
+            "bms_chg_dsg_sta": {
+                "name": "État charge/décharge",
+                "state": {
+                    "PB_STANDBY_STATE": "Veille",
+                    "PB_CHG_STATE":     "En charge",
+                    "PB_DSG_STATE":     "En décharge"
+                }
+            },
+            "bms_run_sta": {
+                "name": "État de fonctionnement BMS",
+                "state": {
+                    "PB_BMS_STATE_NORMAL":        "Normal",
+                    "PB_BMS_STATE_CHARGEABLE":    "Charge possible",
+                    "PB_BMS_STATE_DISCHARGEABLE": "Décharge possible",
+                    "PB_BMS_STATE_STANDBY":       "Veille",
+                    "PB_BMS_STATE_FAULT":         "Défaut"
+                }
+            },
+            "bp_run_sta": {
+                "name": "État de fonctionnement batterie",
+                "state": {
+                    "RUNSTA_RUN":     "En fonctionnement",
+                    "RUNSTA_STANDBY": "Veille",
+                    "RUNSTA_FAULT":   "Défaut",
+                    "RUNSTA_SLEEP":   "Sommeil"
+                }
+            },
+            "dab_mod_sta": {
+                "name": "État du module DAB",
+                "state": {
+                    "PB_MOD_STA_NORMAL":   "Normal",
+                    "PB_MOD_STA_WARNNING": "Avertissement",
+                    "PB_MOD_STA_FAULT":    "Défaut"
+                }
+            },
+            "bp_ptc_exit_event": {
+                "name": "Événement PTC batterie",
+                "state": {
+                    "PB_PTC_OT_STATE":   "Surchauffe",
+                    "PB_PTC_NONE_STATE": "Aucun",
+                    "PB_PTC_OK_STATE":   "OK"
+                }
+            },
             "meter_a_voltage":              { "name": "Tension phase A" },
             "meter_b_voltage":              { "name": "Tension phase B" },
             "meter_c_voltage":              { "name": "Tension phase C" },
