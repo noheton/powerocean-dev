@@ -112,6 +112,59 @@
             "bp_env_temp":                  { "name": "Batterieumgebungstemperatur" },
             "bp_min_cell_temp":             { "name": "Batterie Zelltemperatur min." },
             "bp_max_cell_temp":             { "name": "Batterie Zelltemperatur max." },
+            "bp_sn":                        { "name": "Batteriemodul Seriennummer" },
+            "bp_balance_state":             { "name": "Zellbalancierung" },
+            "bp_sys_state": {
+                "name": "Batteriesystemzustand",
+                "state": {
+                    "NORMAL_STATE": "Normal",
+                    "FAULT_STATE":  "Fehler",
+                    "WARN_STATE":   "Warnung"
+                }
+            },
+            "bms_chg_dsg_sta": {
+                "name": "Lade-/Entladezustand",
+                "state": {
+                    "PB_STANDBY_STATE": "Bereitschaft",
+                    "PB_CHG_STATE":     "Lädt",
+                    "PB_DSG_STATE":     "Entlädt"
+                }
+            },
+            "bms_run_sta": {
+                "name": "BMS-Betriebszustand",
+                "state": {
+                    "PB_BMS_STATE_NORMAL":        "Normal",
+                    "PB_BMS_STATE_CHARGEABLE":    "Ladebereit",
+                    "PB_BMS_STATE_DISCHARGEABLE": "Entladebereit",
+                    "PB_BMS_STATE_STANDBY":       "Bereitschaft",
+                    "PB_BMS_STATE_FAULT":         "Fehler"
+                }
+            },
+            "bp_run_sta": {
+                "name": "Batterie-Betriebszustand",
+                "state": {
+                    "RUNSTA_RUN":     "In Betrieb",
+                    "RUNSTA_STANDBY": "Bereitschaft",
+                    "RUNSTA_FAULT":   "Fehler",
+                    "RUNSTA_SLEEP":   "Ruhezustand"
+                }
+            },
+            "dab_mod_sta": {
+                "name": "DAB-Modulzustand",
+                "state": {
+                    "PB_MOD_STA_NORMAL":   "Normal",
+                    "PB_MOD_STA_WARNNING": "Warnung",
+                    "PB_MOD_STA_FAULT":    "Fehler"
+                }
+            },
+            "bp_ptc_exit_event": {
+                "name": "Batterie PTC-Ereignis",
+                "state": {
+                    "PB_PTC_OT_STATE":   "Übertemperatur",
+                    "PB_PTC_NONE_STATE": "Kein",
+                    "PB_PTC_OK_STATE":   "OK"
+                }
+            },
             "meter_a_voltage":              { "name": "Phase-A-Spannung" },
             "meter_b_voltage":              { "name": "Phase-B-Spannung" },
             "meter_c_voltage":              { "name": "Phase-C-Spannung" },

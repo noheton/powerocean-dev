@@ -390,6 +390,55 @@ SENSOR_DESCRIPTIONS: dict[str, SensorEntityDescription] = {
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # ── Battery state enums (raw protobuf strings, translated via state map) ──
+    "bpSysState": SensorEntityDescription(
+        key="bpSysState",
+        translation_key="bp_sys_state",
+        icon="mdi:battery-heart-variant",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "bmsChgDsgSta": SensorEntityDescription(
+        key="bmsChgDsgSta",
+        translation_key="bms_chg_dsg_sta",
+        icon="mdi:battery-charging-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "bmsRunSta": SensorEntityDescription(
+        key="bmsRunSta",
+        translation_key="bms_run_sta",
+        icon="mdi:battery-sync",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "bpRunSta": SensorEntityDescription(
+        key="bpRunSta",
+        translation_key="bp_run_sta",
+        icon="mdi:battery-sync-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "dabModSta": SensorEntityDescription(
+        key="dabModSta",
+        translation_key="dab_mod_sta",
+        icon="mdi:transit-connection-variant",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "bpPtcExitEvent": SensorEntityDescription(
+        key="bpPtcExitEvent",
+        translation_key="bp_ptc_exit_event",
+        icon="mdi:thermometer-alert",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "bpBalanceState": SensorEntityDescription(
+        key="bpBalanceState",
+        translation_key="bp_balance_state",
+        icon="mdi:scale-balance",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "bpSn": SensorEntityDescription(
+        key="bpSn",
+        translation_key="bp_sn",
+        icon="mdi:barcode",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     # ── Grid-connection metering (measurement) ────────────────────────────────
     "meterAVoltage": SensorEntityDescription(
         key="meterAVoltage",
