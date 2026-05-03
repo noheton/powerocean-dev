@@ -337,6 +337,69 @@ class EcoflowApi:
                 resp.raise_for_status()
                 return await resp.json()
 
+    async def async_get_property(
+        self,
+        sn: str | None = None,
+        params: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Read device properties via the EcoFlow consumer API.
+
+        Tries POST /iot-devices/device/getDeviceProperty first (the read
+        companion to setDeviceProperty). On non-2xx, falls back to GET
+        /iot-devices/device/acquireQuotaAll, which dumps the full quota
+        map for a serial number.
+
+        Args:
+            sn: Target device serial. Defaults to ``self.sn`` (the
+                inverter); pass the PowerPulse SN explicitly to read its
+                properties.
+            params: Optional list of camelCase keys to filter on. None or
+                an empty list requests the full set.
+
+        Returns:
+            The decoded JSON response. Shape is endpoint-dependent and
+            intentionally not normalised — callers inspect it directly.
+
+        """
+        if not self.api_host:
+            msg = "Region not detected; cannot read property"
+            raise EcoflowApiError(msg)
+
+        target_sn = sn or self.sn
+        session = await self._get_session()
+        headers = {
+            "authorization": f"Bearer {self.token}",
+            "product-type": self.variant,
+            "content-type": "application/json",
+        }
+
+        post_url = f"https://{self.api_host}/iot-devices/device/getDeviceProperty"
+        payload: dict[str, Any] = {"sn": target_sn, "params": params or []}
+        try:
+            async with asyncio.timeout(10):
+                async with session.post(
+                    post_url, json=payload, headers=headers
+                ) as resp:
+                    if resp.status == HTTP_OK:
+                        return await resp.json()
+                    LOGGER.debug(
+                        "getDeviceProperty %s returned %s; trying acquireQuotaAll",
+                        target_sn,
+                        resp.status,
+                    )
+        except (TimeoutError, aiohttp.ClientError) as err:
+            LOGGER.debug("getDeviceProperty %s failed: %s", target_sn, err)
+
+        get_url = (
+            f"https://{self.api_host}/iot-devices/device/acquireQuotaAll"
+            f"?sn={target_sn}"
+        )
+        async with asyncio.timeout(10):
+            async with session.get(get_url, headers=headers) as resp:
+                resp.raise_for_status()
+                return await resp.json()
+
     async def async_set_property(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Write a device property via the EcoFlow consumer API.

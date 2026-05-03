@@ -299,6 +299,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
         return await api_entry.async_ocpp_post_backend(body)
 
+    # ── Service: ocpp_probe_runtime ───────────────────────────────────────────
+    # Read-only diagnostic. Calls getDeviceProperty / acquireQuotaAll against
+    # the PowerPulse SN and returns the raw payload, so the on-device OCPP
+    # field names (vendorInfoSet / pileOcppParam / etc.) can be discovered
+    # empirically. Used to design the runtime-handover write.
+    async def handle_ocpp_probe_runtime(call: ServiceCall) -> ServiceResponse:
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        if api_entry is None:
+            msg = "PowerOcean API not available"
+            raise HomeAssistantError(msg)
+        sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
+        if not sn:
+            msg = "PowerPulse serial number not found; pass 'sn' explicitly"
+            raise HomeAssistantError(msg)
+        params = call.data.get("params")
+        return {
+            "sn": sn,
+            "response": await api_entry.async_get_property(sn=sn, params=params),
+        }
+
     # ── Service: ocpp_disable_backend ─────────────────────────────────────────
     # POSTs the same record with isEnabled=0 (the documented "tidy" path).
     async def handle_ocpp_disable_backend(call: ServiceCall) -> ServiceResponse:
@@ -344,6 +364,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             handle_ocpp_register_backend,
             schema=_ocpp_bind_schema,
             supports_response=SupportsResponse.OPTIONAL,
+        )
+
+    if not hass.services.has_service(DOMAIN, "ocpp_probe_runtime"):
+        hass.services.async_register(
+            DOMAIN,
+            "ocpp_probe_runtime",
+            handle_ocpp_probe_runtime,
+            schema=vol.Schema(
+                {
+                    vol.Optional("sn"): cv.string,
+                    vol.Optional("params"): vol.All(
+                        cv.ensure_list, [cv.string]
+                    ),
+                }
+            ),
+            supports_response=SupportsResponse.ONLY,
         )
 
     if not hass.services.has_service(DOMAIN, "ocpp_disable_backend"):
@@ -430,6 +466,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "ocpp_list_backends",
             "ocpp_register_backend",
             "ocpp_disable_backend",
+            "ocpp_probe_runtime",
         ):
             if hass.services.has_service(DOMAIN, service_name):
                 hass.services.async_remove(DOMAIN, service_name)
