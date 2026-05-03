@@ -1,0 +1,406 @@
+# OCPP 1.6 — APK decompile findings
+
+Source: EcoFlow Android app v6.13.8.2 (`doc/EcoFlow_6.13.8.2_APKPure/com.ecoflow.apk`)
+Tool: jadx 1.5.4
+Captured: 2026-05-03
+
+This file resolves every "open question" that doc/ocpp-investigation.md was
+written to answer. Findings are quoted verbatim from the decompiled Kotlin/
+Java sources; jadx artifact paths are listed so each claim is verifiable.
+
+================================================================================
+1. HTTP API SURFACE  (account-level OCPP platform catalog)
+================================================================================
+
+Endpoint declarations (Retrofit annotations):
+
+  @GET   /iot-service/ac305/charge/ocpp/domain
+         → BaseResponse<OcppUrlDomain>
+         sources/o9/b.java:629  →  o9/b.java::U()
+
+  @GET   /provider-service/app/ocppPlatformConfig/list
+         → BaseResponse<List<CPOcppPlatformBean>>
+         sources/ln/b.java:228  →  ln/b.java::c0()
+         sources/cd/b.java:115  →  cd/b.java::c0()
+
+  @POST  /provider-service/app/ocppPlatformConfig
+         body: CPOcppBindReq
+         → BaseResponse<Object>
+         sources/ln/b.java:274  →  ln/b.java::r1(CPOcppBindReq)
+         sources/cd/b.java:72   →  cd/b.java::B7(CPOcppBindReq)
+
+NO  PUT, NO  DELETE on /ocppPlatformConfig.  Disabling a backend is done by
+POSTing the same record with isEnabled=0 (see CPOcppPlatformBean.isEnabled).
+
+
+GET /iot-service/ac305/charge/ocpp/domain — response body
+  com/ecoflow/common/bean/device/ac305/OcppUrlDomain.java
+  ─────────────────────────────────────────────────────────
+  {
+    "websocketDomain":       String,   // primary CS URL
+    "websocketDomainBackup": String    // fallback CS URL
+  }
+
+
+POST /provider-service/app/ocppPlatformConfig — request body (CPOcppBindReq)
+  com/ecoflow/cp307module/bean/CPOcppBindReq.java
+  com/ecoflow/jtmodule/s1/bean/CPOcppBindReq.java   (identical, S1 charger variant)
+  ─────────────────────────────────────────────────────────────────────────────
+  {
+    "platformCode":  String,   // vendor token, e.g. "lbbrhzn"
+    "platformName":  String,   // display name
+    "platformType":  int,      // (enum, see notes)
+    "backendUrl":    String,   // ws://...
+    "secureUrl":     String,   // wss://... (separate slot from backendUrl)
+    "authKey":       String,   // OCPP 1.6 security profile 1 token; "" if unused
+    "sortOrder":     int,
+    "isEnabled":     int,      // 1 = active, 0 = stored but inactive
+    "sn":            String    // target charger serial
+  }
+  Constructor argument order (verbatim from decompile):
+    (platformCode, platformName, platformType:int, backendUrl, secureUrl,
+     authKey, sortOrder:int, isEnabled:int, sn)
+
+
+GET /provider-service/app/ocppPlatformConfig/list — response item (CPOcppPlatformBean)
+  com/ecoflow/cp307module/bean/CPOcppPlatformBean.java
+  com/ecoflow/jtmodule/s1/bean/CPOcppPlatformBean.java
+  ─────────────────────────────────────────────────────────────────────────────
+  {
+    "id":           String,    // server-assigned record id
+    "sn":           String,
+    "userId":       String,
+    "platformCode": String,
+    "platformName": String,
+    "platformType": int,
+    "backendUrl":   String,
+    "authKey":      String,
+    "secureUrl":    String,
+    "isEnabled":    int
+  }
+  Note: list response carries (id, userId) which the POST request body does NOT.
+
+
+================================================================================
+2. CHARGER-LEVEL WRITE  (the call that actually changes runtime behaviour)
+================================================================================
+
+The HTTP POST above only updates the EcoFlow-side catalog. The actual handover
+to a custom central system is a SECOND step: a proto-encoded MQTT/IoT command
+sent over the same iot bus this integration already taps for sensors.
+
+Wire-up:
+  com/ecoflow/cp307module/util/o.java:916
+  ─────────────────────────────────────────
+  public final void X(String deviceId, String url, String vendor,
+                      int profile, String authKey, dd.g cb) {
+    Cp307Ocpp.vendorInfoSet msg = Cp307Ocpp.vendorInfoSet.newBuilder()
+        .setDeviceId(deviceId)   // OCPP charge-point ID
+        .setUrl(url)             // ws:// or wss://
+        .setVendor(vendor)       // CPOcppBindReq.platformCode
+        .setProfile(profile)     // OCPP 1.6 security profile: 0/1/2
+        .setAuthKey(authKey)
+        .build();
+    C(this, 53, 224, 161, 0, 0, msg, 0L, new y(), 88, null);
+    //          ^module ^cmd_set ^cmd_id (VENDOR_INFO_SET = 0xA1)
+  }
+
+
+================================================================================
+3. CP307 OCPP PROTO — full message catalog
+================================================================================
+
+Source: com/ecoflow/cp307module/proto/Cp307Ocpp.java (descriptor at line 30)
+
+Messages directly relevant to backend management:
+
+  message vendorInfoSet {
+    optional string device_id = 1;     // OCPP CP ID
+    optional string url       = 2;
+    optional string vendor    = 3;     // platformCode
+    optional string cpo_name  = 4;     // platformName
+    optional uint32 profile   = 5;     // OCPP 1.6 security profile 0/1/2
+    optional string auth_key  = 6;
+  }
+  message vendorInfoSetAck { uint32 result = 1; }
+
+  message vendorInfoGet {
+    bool has_device_id = 1; bool has_url = 2; bool has_vendor = 3;
+    bool has_cpo_name = 4;  bool has_profile = 5;
+  }
+  message vendorInfoGetAck {                 // current backend on the charger
+    optional string device_id = 1;
+    optional string url       = 2;
+    optional string vendor    = 3;
+    optional string cpo_name  = 4;
+    optional uint32 profile   = 5;
+  }
+
+  message vendorInfoClr { }                  // ★ RESET — clears custom backend
+  message vendorInfoClrAck { uint32 result = 1; }
+
+  message vendorCertSet { }                  // OCPP 1.6 sec profile 2/3 cert hook
+  message vendorCertSetAck { uint32 result = 1; }
+
+CmdID enum (cp307_ocpp.proto):
+  CONFIG_SET             = 0x01
+  CONFIG_GET             = 0x02
+  SYSTEM_RESET           = 0x03
+  ERROR_REPORT           = 0x04
+  METER_VALUE_REPORT     = 0x05
+  CHARGE_CTRL            = 0x06
+  CHARGE_APPOINTMENT     = 0x07
+  CHARGING_STATE_CHANGE  = 0x08
+  ORDER_INFO_SET         = 0x09
+  ORDER_INFO_GET         = 0x0A
+  VENDOR_INFO_SET        = 0xA1   ← util.o.X() uses this
+  VENDOR_INFO_GET        = 0xA2   ← read current backend
+  VENDOR_INFO_CLR        = 0xA3   ← reset to EcoFlow cloud
+  VENDOR_CERT_SET        = 0xA4
+  DATA_TRANSFER_CP2CS    = 0xF1
+  DATA_TRANSFER_CS2CP    = 0xF2
+
+Other messages of interest for read-only sensors (not backend-related):
+  meterValue, chargeCtrl/Ack, chargerAppointment, chargingStateChangeReport,
+  errorCodeReport, configSet/Get, orderInfoSet/Get.
+
+
+================================================================================
+4. RESET / FALLBACK PATH  — open question RESOLVED
+================================================================================
+
+doc/apk.md:214 listed this as unresolved: "Is there a 'reset to EcoFlow cloud'
+call, or does the user need a factory reset?"
+
+Answer: YES — proto cmd VENDOR_INFO_CLR (0xA3) clears the runtime config on
+the charger. It is independent of the HTTP catalog. To fully revert:
+
+  1. Send VENDOR_INFO_CLR over the iot bus  → charger reconnects to EcoFlow.
+  2. Optionally POST /ocppPlatformConfig with isEnabled=0  → tidy the catalog.
+
+No factory reset required. No HTTP DELETE exists.
+
+Recipe used:
+  grep -rn "resetOcpp|defaultOcpp|ecoflowOcpp|deleteOcpp|removeOcpp" sources/
+  → 0 hits (the reset is a proto cmd, not a separate HTTP/Java method)
+
+
+================================================================================
+5. ROLE GATING  — open question RESOLVED
+================================================================================
+
+doc/apk.md:213 flagged this as "screen is likely gated on a backend role flag
+(integrator/installer)".
+
+Findings (recipe 3):
+  Activity:   sources/com/ecoflow/cp307module/ui/setting/ocpp/CPOcppSettingActivity.java
+  ViewModel:  sources/com/ecoflow/cp307module/ui/setting/ocpp/CPOcppSettingViewMode.java
+  S1 variant: sources/com/ecoflow/jtmodule/s1/detail/charger/cp307/S1CPOcppSetting*
+
+  grep -n "isInstaller|roleType|isOperator|isAdmin|userRole|userType|installerOnly"
+  → 0 hits in any of the four OCPP screen files
+
+The screen is launched directly from CP307SettingActivity:1155 via
+CPOcppSettingActivity.E.a(this, deviceListItemBeanD1) with no visibility
+predicate. End-user accounts CAN exercise this code path. The "integrator-
+only" framing in apk.md was wrong; what made it look gated is that the menu
+entry is buried under multiple settings tiers, not a permission check.
+
+
+================================================================================
+6. UPDATED HA INTEGRATION PLAN  (replaces apk.md Stage 1 sketch)
+================================================================================
+
+Two writes are needed for a working redirect — only one is enough to break
+EcoFlow control. Order matters.
+
+  Step 1 (HTTP, account-side, mostly cosmetic):
+    POST /provider-service/app/ocppPlatformConfig
+      body = CPOcppBindReq(
+        platformCode="lbbrhzn",  platformName="HA lbbrhzn/ocpp",
+        platformType=0,          // confirm enum from existing /list responses
+        backendUrl="ws://homeassistant.local:9000",
+        secureUrl="",            authKey="",
+        sortOrder=0,             isEnabled=1,
+        sn=<charger_sn>)
+    → registers the platform in the user's account. Catalog only.
+
+  Step 2 (PROTO, charger-side — this is the real switch):
+    Send VENDOR_INFO_SET (CmdID 0xA1, module 53, cmd_set 224) carrying:
+      device_id = <CP ID matching lbbrhzn/ocpp Charge Point Identity>
+      url       = "ws://homeassistant.local:9000"
+      vendor    = "lbbrhzn"
+      cpo_name  = "HA lbbrhzn/ocpp"
+      profile   = 0          // unauthenticated (default for lbbrhzn/ocpp)
+      auth_key  = ""
+    → the charger reconnects to the supplied URL on receipt.
+
+  Step 3 — Reverse path:
+    Send VENDOR_INFO_CLR (CmdID 0xA3, no body)  → reverts to EcoFlow cloud.
+
+Read-only probes that need no decompile, only a bearer token:
+    GET /iot-service/ac305/charge/ocpp/domain?sn=<sn>
+    GET /provider-service/app/ocppPlatformConfig/list
+    Send VENDOR_INFO_GET   (read what the charger currently believes)
+
+
+================================================================================
+7. WHAT WE STILL DON'T KNOW
+================================================================================
+
+  1. platformType enum values. CPOcppBindReq.platformType is an int but no
+     constants were inlined in the activity. Run /ocppPlatformConfig/list
+     against a real account to see what the existing entries use; or grep for
+     `platformType ==` in the ViewModel.
+  2. Module/cmd_set numbers (53, 224) for VENDOR_INFO_SET routing. The values
+     were extracted from util.o.X() literally, but their meaning in EcoFlow's
+     iot frame header isn't documented here. Cross-check against existing
+     proto traffic this integration receives.
+  3. Whether the existing PowerOcean integration's MQTT/iot transport already
+     covers cp307 messages, or whether CP307 is on a separate channel.
+     parser.py / coordinator.py routing needs an audit.
+
+Everything else needed to ship Stage 1+2+3 of the implementation plan
+(api.md/ocpp-investigation.md) is now captured.
+
+
+================================================================================
+8. CROSS-CHECK AGAINST OCPP 1.6 AUTHORITATIVE SOURCES
+================================================================================
+
+Sources consulted:
+  - mobilityhouse/ocpp v16/enums.py (canonical Python OCPP 1.6 implementation
+    used by the Open Charge Alliance ecosystem; powers most third-party
+    central systems including lbbrhzn/ocpp's transitive dep chain)
+    https://raw.githubusercontent.com/mobilityhouse/ocpp/master/ocpp/v16/enums.py
+  - lbbrhzn/ocpp const.py (the HACS integration the user runs as the CS host)
+    https://github.com/lbbrhzn/ocpp/blob/main/custom_components/ocpp/const.py
+  - ocpp-spec.org (Open Charge Alliance specification portal — schemas
+    only; descriptive prose lives in the OCPP 1.6 PDF gated behind a
+    membership form, so we cite the JSON schema and the Python enum
+    transcription rather than the PDF)
+
+8.1 ChargePointStatus  — EcoFlow proto vs. OCPP 1.6 spec
+─────────────────────────────────────────────────────────
+
+  OCPP 1.6 spec (mobilityhouse/ocpp ChargePointStatus):
+    Available, Preparing, Charging, SuspendedEVSE, SuspendedEV,
+    Finishing, Reserved, Unavailable, Faulted
+
+  EcoFlow EV_CHG_STS_* values seen in chargingStatus sensor:
+    EV_CHG_STS_AVAILABLE      ↔ Available     ✓
+    EV_CHG_STS_PREPARING      ↔ Preparing     ✓
+    EV_CHG_STS_CHARGING       ↔ Charging      ✓
+    EV_CHG_STS_SUSPENDED_EVSE ↔ SuspendedEVSE ✓
+    EV_CHG_STS_SUSPENDED_EV   ↔ SuspendedEV   ✓
+    EV_CHG_STS_FINISHING      ↔ Finishing     ✓
+    EV_CHG_STS_RESERVED       ↔ Reserved      ✓
+    EV_CHG_STS_UNAVAILABLE    ↔ Unavailable   ✓
+    EV_CHG_STS_FAULTED        ↔ Faulted       ✓
+
+  9-for-9. The translation map landed in this branch's strings.json /
+  translations/{en,de,fr}.json is correct against the spec. No further
+  states exist in OCPP 1.6 — this enum is closed.
+
+8.2 ChargePointErrorCode — EcoFlow ERROR_CODE enum vs. OCPP 1.6 spec
+────────────────────────────────────────────────────────────────────
+
+  EcoFlow proto enum (cp307_ocpp.proto, captured in §3 above):
+
+    Spec value              EcoFlow proto value
+    ──────────────────────  ─────────────────────────
+    ConnectorLockFailure    CONNECTOR_LOCK_FAILURE
+    EVCommunicationError    EV_COMMUNICATION_ERROR
+    GroundFailure           GROUND_FAILURE
+    HighTemperature         HIGH_TEMP             ← truncated, same meaning
+    InternalError           INTER_ERROR           ← truncated, same meaning
+    LocalListConflict       LOCAL_LIST_CONFLICT
+    NoError                 NO_ERROR
+    OtherError              OTHER_ERROR
+    OverCurrentFailure      OVER_CURRENT_FAILURE
+    OverVoltage             OVER_VOLT             ← truncated
+    PowerMeterFailure       POWER_METER_FAILURE
+    PowerSwitchFailure      POWER_SWITCH_FAILURE
+    ReaderFailure           READER_FAILURE
+    ResetFailure            RESET_FAILURE
+    UnderVoltage            UNDER_VOLT            ← truncated
+    WeakSignal              WEAK_SIGNAL
+
+  16 spec values, 16 proto values, perfect 1:1 (with three abbreviations
+  EcoFlow chose for proto compactness). This is decisive evidence that
+  cp307_ocpp.proto IS a direct transliteration of OCPP 1.6 — not a
+  vendor superset, not a subset. Any future error-code sensor we add
+  can safely round-trip through the spec terminology.
+
+8.3 Security profile  — `profile: uint32` in vendorInfoSet
+──────────────────────────────────────────────────────────
+
+  OCPP 1.6 Security Whitepaper Edition 2 defines:
+    Profile 1: HTTP Basic auth over unsecured ws://
+    Profile 2: HTTP Basic auth over wss:// (TLS)
+    Profile 3: TLS + client cert authentication
+
+  Profile 0 is NOT defined by the spec. It is the de-facto "no auth, plain
+  ws://" mode that lbbrhzn/ocpp ships with by default; lbbrhzn/ocpp does
+  not advertise a profile number for this mode in its README.
+  We therefore read the EcoFlow proto's `profile=0` as "unauthenticated"
+  and `profile=1` as the standard ws://+basic-auth mode that lbbrhzn/ocpp
+  supports if the user sets a password.
+  ★ Recommendation: when the writer is implemented, default profile=0 in
+    the form (matches lbbrhzn/ocpp's out-of-box config); switch to
+    profile=1 automatically when the user fills in `auth_key`.
+
+8.4 lbbrhzn/ocpp host coordinates — what the user actually runs
+───────────────────────────────────────────────────────────────
+
+  Confirmed from custom_components/ocpp/const.py:
+    DEFAULT_PORT = 9000
+    CONF_CPID    = "charge_point_identity"
+
+  This validates the form copy already in this branch:
+    - Default URL hint  "ws://homeassistant.local:9000"
+    - CP-ID label "must match the Charge Point Identity in lbbrhzn/ocpp"
+
+  No path component is required — the charger connects to the bare host:port
+  and lbbrhzn/ocpp accepts any path; the cpid sent in BootNotification.req
+  is what binds the session to a configured charger entry.
+
+8.5 OCPP-J URL format — chargePointIdentity in the path
+────────────────────────────────────────────────────────
+
+  The OCPP 1.6-J specification (OCPP-J 1.6 §3.1.1) defines the WebSocket
+  URL as:
+      ws://<host>[:<port>]/<centralSystemPath>/<chargePointIdentity>
+  with the chargePointIdentity being the last URL segment.
+
+  EcoFlow's vendorInfoSet packs this differently:
+    url       = full base URL (no identity in path)
+    device_id = the identity (sent separately, charger inserts on connect)
+
+  This means the user enters only the BASE URL in our form. The integration
+  must NOT append cpid to the URL — the firmware does that itself from
+  device_id. Important UX note for the form description.
+
+
+================================================================================
+9. NET CONFIDENCE LEVEL
+================================================================================
+
+  Schema    (CPOcppBindReq, CPOcppPlatformBean, OcppUrlDomain): VERIFIED ✓
+  Endpoints (3 routes captured from Retrofit annotations):       VERIFIED ✓
+  Proto     (vendorInfoSet/Get/Clr + ack):                       VERIFIED ✓
+  Reset     (VENDOR_INFO_CLR, no factory reset needed):          VERIFIED ✓
+  Role gate (none — no installer flag found):                    VERIFIED ✓
+  Status enum 1:1 with OCPP 1.6 spec:                            VERIFIED ✓
+  Error enum 1:1 with OCPP 1.6 spec:                             VERIFIED ✓
+  lbbrhzn/ocpp host defaults (port 9000, cpid):                  VERIFIED ✓
+
+  apk.md:237 — "do not ship until the ocppPlatformConfig request schema
+  is captured — guessing risks bricking users' chargers" — this gate is
+  now CLEARED for the HTTP catalog write. The proto write (§2) gate is
+  also cleared because the proto descriptor itself is in the APK.
+
+  Two soft items remain (§7.1, §7.2): platformType enum values, and the
+  iot-frame routing numbers (module=53, cmd_set=224). Both can be resolved
+  empirically from a single live API call against the user's account; no
+  further decompile work is needed.
