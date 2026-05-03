@@ -40,9 +40,20 @@ ocpp_register_backend:
   fields:
     backend_url:
       name: Backend URL
-      description: "ws:// or wss:// URL of the central system, e.g. ws://homeassistant.local:9000"
+      description: "ws:// URL of the central system, e.g. ws://homeassistant.local:9000"
       required: true
       example: "ws://homeassistant.local:9000"
+      selector:
+        text:
+    secure_url:
+      name: Secure URL
+      description: >
+        wss:// URL of the central system. Required — the EcoFlow API
+        rejects requests with an empty secureUrl (code 1006). If your
+        OCPP backend has no TLS listener, use the same host with a
+        placeholder TLS port (e.g. wss://homeassistant.local:9001).
+      required: true
+      example: "wss://homeassistant.local:9001"
       selector:
         text:
     sn:
@@ -67,21 +78,16 @@ ocpp_register_backend:
         text:
     platform_type:
       name: Platform Type
-      description: Integer enum (values undocumented; inspect via ocpp_list_backends).
+      description: >
+        Integer enum. Observed values: 1 = SmartRed (built-in), 2 = third-party
+        (use this for HA lbbrhzn/ocpp). Use ocpp_list_backends to inspect.
       required: false
-      default: 0
+      default: 2
       selector:
         number:
           mode: box
           min: 0
           max: 99
-    secure_url:
-      name: Secure URL
-      description: Optional wss:// URL for OCPP 1.6 security profiles 2/3. Leave empty otherwise.
-      required: false
-      default: ""
-      selector:
-        text:
     auth_key:
       name: Auth Key
       description: OCPP 1.6 security profile 1 token. Leave empty for unauthenticated profile 0.
@@ -114,6 +120,13 @@ ocpp_disable_backend:
       example: "ws://homeassistant.local:9000"
       selector:
         text:
+    secure_url:
+      name: Secure URL
+      description: "Same wss:// URL used when registering. Required by the EcoFlow API."
+      required: true
+      example: "wss://homeassistant.local:9001"
+      selector:
+        text:
     sn:
       name: Charger SN
       description: PowerPulse serial number. Auto-detected if omitted.
@@ -135,18 +148,12 @@ ocpp_disable_backend:
     platform_type:
       name: Platform Type
       required: false
-      default: 0
+      default: 2
       selector:
         number:
           mode: box
           min: 0
           max: 99
-    secure_url:
-      name: Secure URL
-      required: false
-      default: ""
-      selector:
-        text:
     auth_key:
       name: Auth Key
       required: false
