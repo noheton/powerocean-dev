@@ -312,29 +312,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if api_entry is None:
             msg = "PowerOcean API not available"
             raise HomeAssistantError(msg)
-        sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
-        if not sn:
-            msg = "PowerPulse serial number not found; pass 'sn' explicitly"
-            raise HomeAssistantError(msg)
-        params = call.data.get("params")
-        inverter_sn = entry.data.get(CONF_DEVICE_ID)
-        tried: list[str] = []
-        last_err: Exception | None = None
-        # Try the requested SN first, then fall back to the inverter SN — the
-        # PowerPulse is a sub-device whose quota data lives under the inverter.
-        for target in dict.fromkeys([sn, inverter_sn]):
-            if not target:
-                continue
-            tried.append(target)
-            try:
-                response = await api_entry.async_get_property(sn=target, params=params)
-                return {"sn": target, "response": response}
-            except Exception as err:  # noqa: BLE001
-                LOGGER.debug("ocpp_probe_runtime %s failed: %s", target, err)
-                last_err = err
-        raise HomeAssistantError(
-            f"ocpp_probe_runtime failed for all targets {tried}: {last_err}"
-        ) from last_err
+        # PowerOcean data comes from provider-service/user/device/detail, not
+        # the iot-devices quota endpoints (which 500 for this product line).
+        try:
+            raw = await api_entry.fetch_raw()
+        except Exception as err:
+            raise HomeAssistantError(f"ocpp_probe_runtime fetch failed: {err}") from err
+        return {"response": raw}
 
     # ── Service: ocpp_disable_backend ─────────────────────────────────────────
     # POSTs the same record with isEnabled=0 (the documented "tidy" path).
@@ -389,14 +373,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             DOMAIN,
             "ocpp_probe_runtime",
             handle_ocpp_probe_runtime,
-            schema=vol.Schema(
-                {
-                    vol.Optional("sn"): cv.string,
-                    vol.Optional("params"): vol.All(
-                        cv.ensure_list, [cv.string]
-                    ),
-                }
-            ),
+            schema=vol.Schema({}),
             supports_response=SupportsResponse.ONLY,
         )
 
