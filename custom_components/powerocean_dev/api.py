@@ -434,3 +434,137 @@ class EcoflowApi:
             async with session.post(url, json=payload, headers=headers) as resp:
                 resp.raise_for_status()
                 return await resp.json()
+
+    async def async_set_property_for(
+        self, sn: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Like async_set_property but targets an explicit SN (e.g. PowerPulse)."""
+        if not self.api_host:
+            msg = "Region not detected; cannot write property"
+            raise EcoflowApiError(msg)
+
+        session = await self._get_session()
+        url = f"https://{self.api_host}/iot-devices/device/setDeviceProperty"
+        headers = {
+            "authorization": f"Bearer {self.token}",
+            "product-type": self.variant,
+            "content-type": "application/json",
+        }
+        payload: dict[str, Any] = {"sn": sn, "params": params}
+        try:
+            async with asyncio.timeout(10):
+                async with session.post(url, json=payload, headers=headers) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
+        except (TimeoutError, aiohttp.ClientError) as err:
+            msg = f"setDeviceProperty for {sn} failed: {err}"
+            raise EcoflowApiError(msg) from err
+
+    async def async_ocpp_get_domain(self, sn: str) -> dict[str, Any]:
+        """GET /iot-service/ac305/charge/ocpp/domain — current runtime OCPP URL on the charger.
+
+        Returns OcppUrlDomain: {websocketDomain: str, websocketDomainBackup: str}
+        APK source: o9/b.java:629 → o9/b.java::U()
+        """
+        if not self.api_host:
+            msg = "Region not detected; cannot read OCPP domain"
+            raise EcoflowApiError(msg)
+
+        session = await self._get_session()
+        url = f"https://{self.api_host}/iot-service/ac305/charge/ocpp/domain"
+        headers = {"authorization": f"Bearer {self.token}"}
+        try:
+            async with asyncio.timeout(10):
+                async with session.get(url, params={"sn": sn}, headers=headers) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
+        except (TimeoutError, aiohttp.ClientError) as err:
+            msg = f"ocpp/domain for {sn} failed: {err}"
+            raise EcoflowApiError(msg) from err
+
+    async def async_ocpp_vendor_info_set(
+        self,
+        sn: str,
+        device_id: str,
+        url: str,
+        vendor: str,
+        cpo_name: str,
+        profile: int,
+        auth_key: str,
+    ) -> dict[str, Any]:
+        """Send vendorInfoSet (VENDOR_INFO_SET / CmdID 0xA1) to the PowerPulse charger.
+
+        This is the runtime handover that actually redirects the charger to a new
+        OCPP central system. It is distinct from the catalog write
+        (POST /provider-service/app/ocppPlatformConfig) which is account-level only.
+
+        The command is sent via setDeviceProperty with the charger SN. If the
+        REST gateway rejects the charger SN the caller should retry with the
+        inverter SN — the inverter may proxy sub-device commands.
+
+        APK source: com/ecoflow/cp307module/util/o.java:916 → method X()
+        Proto: Cp307Ocpp.vendorInfoSet {device_id, url, vendor, cpo_name, profile, auth_key}
+        CmdID: 0xA1 (VENDOR_INFO_SET), module=53, cmd_set=224
+        """
+        if not self.api_host:
+            msg = "Region not detected; cannot send vendorInfoSet"
+            raise EcoflowApiError(msg)
+
+        session = await self._get_session()
+        endpoint = f"https://{self.api_host}/iot-devices/device/setDeviceProperty"
+        headers = {
+            "authorization": f"Bearer {self.token}",
+            "product-type": self.variant,
+            "content-type": "application/json",
+        }
+        # The REST gateway may translate this nested structure to the proto
+        # Cp307Ocpp.vendorInfoSet message (CmdID 0xA1 / module 53 / cmd_set 224).
+        params: dict[str, Any] = {
+            "vendorInfoSet": {
+                "deviceId": device_id,
+                "url": url,
+                "vendor": vendor,
+                "cpoName": cpo_name,
+                "profile": profile,
+                "authKey": auth_key,
+            }
+        }
+        payload: dict[str, Any] = {"sn": sn, "params": params}
+        try:
+            async with asyncio.timeout(10):
+                async with session.post(
+                    endpoint, json=payload, headers=headers
+                ) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
+        except (TimeoutError, aiohttp.ClientError) as err:
+            msg = f"vendorInfoSet for {sn} failed: {err}"
+            raise EcoflowApiError(msg) from err
+
+    async def async_ocpp_vendor_info_clr(self, sn: str) -> dict[str, Any]:
+        """Send vendorInfoClr (VENDOR_INFO_CLR / CmdID 0xA3) — revert charger to EcoFlow cloud.
+
+        APK source: VENDOR_INFO_CLR cmd in cp307_ocpp.proto. No factory reset needed.
+        """
+        if not self.api_host:
+            msg = "Region not detected; cannot send vendorInfoClr"
+            raise EcoflowApiError(msg)
+
+        session = await self._get_session()
+        endpoint = f"https://{self.api_host}/iot-devices/device/setDeviceProperty"
+        headers = {
+            "authorization": f"Bearer {self.token}",
+            "product-type": self.variant,
+            "content-type": "application/json",
+        }
+        payload: dict[str, Any] = {"sn": sn, "params": {"vendorInfoClr": {}}}
+        try:
+            async with asyncio.timeout(10):
+                async with session.post(
+                    endpoint, json=payload, headers=headers
+                ) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
+        except (TimeoutError, aiohttp.ClientError) as err:
+            msg = f"vendorInfoClr for {sn} failed: {err}"
+            raise EcoflowApiError(msg) from err

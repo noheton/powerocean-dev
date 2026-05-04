@@ -199,6 +199,109 @@ ocpp_disable_backend:
           min: 0
           max: 99
 
+ocpp_get_domain:
+  name: OCPP — Get Runtime Domain
+  description: >
+    Read the OCPP central-system URL the charger currently believes it is
+    connected to (GET /iot-service/ac305/charge/ocpp/domain).
+    Returns OcppUrlDomain: {websocketDomain, websocketDomainBackup}.
+    APK source: o9/b.java:629.
+  fields:
+    sn:
+      name: Charger SN
+      description: PowerPulse serial number. Auto-detected if omitted.
+      required: false
+      selector:
+        text:
+
+ocpp_activate_backend:
+  name: OCPP — Activate Backend (Runtime Handover)
+  description: >
+    Send vendorInfoSet (CmdID 0xA1 / VENDOR_INFO_SET) directly to the
+    PowerPulse charger — the proto-level write that actually redirects it
+    to a custom OCPP 1.6 central system. This is the step that the
+    catalog-only ocpp_register_backend service does NOT perform.
+    APK source: com/ecoflow/cp307module/util/o.java:916.
+    The charger reconnects to backend_url immediately on success.
+  fields:
+    backend_url:
+      name: Backend URL
+      description: >
+        Base ws:// URL of the OCPP central system. Do NOT append the
+        charge-point identity — the firmware appends device_id itself per
+        OCPP-J 1.6 §3.1.1. Example: ws://192.168.1.60:9000
+      required: true
+      example: "ws://192.168.1.60:9000"
+      selector:
+        text:
+    device_id:
+      name: Charge Point Identity
+      description: >
+        The OCPP charge-point identity sent in BootNotification. Must match
+        the "Charge Point Identity" configured in lbbrhzn/ocpp.
+        Defaults to the charger serial number if you leave it the same.
+      required: true
+      example: AC31ZEH4AG130052
+      selector:
+        text:
+    sn:
+      name: Charger SN
+      description: PowerPulse serial number. Auto-detected if omitted.
+      required: false
+      selector:
+        text:
+    vendor:
+      name: Vendor / Platform Code
+      description: Matches platformCode in the catalog. Default "lbbrhzn".
+      required: false
+      default: lbbrhzn
+      selector:
+        text:
+    cpo_name:
+      name: CPO Name
+      description: Matches platformName in the catalog. Default "HA lbbrhzn/ocpp".
+      required: false
+      default: HA lbbrhzn/ocpp
+      selector:
+        text:
+    profile:
+      name: Security Profile
+      description: >
+        OCPP 1.6 security profile. 0 = unauthenticated (lbbrhzn/ocpp default),
+        1 = HTTP Basic auth (ws:// + auth_key), 2 = TLS + Basic auth.
+      required: false
+      default: 0
+      selector:
+        select:
+          options:
+            - label: "0 — No auth (plain ws://)"
+              value: "0"
+            - label: "1 — HTTP Basic (ws:// + auth_key)"
+              value: "1"
+            - label: "2 — TLS + Basic (wss:// + auth_key)"
+              value: "2"
+    auth_key:
+      name: Auth Key
+      description: OCPP 1.6 security profile 1/2 token. Leave empty for profile 0.
+      required: false
+      default: ""
+      selector:
+        text:
+
+ocpp_reset_backend:
+  name: OCPP — Reset to EcoFlow Cloud
+  description: >
+    Send vendorInfoClr (CmdID 0xA3 / VENDOR_INFO_CLR) to the PowerPulse
+    charger — reverts it to the EcoFlow cloud OCPP backend without a
+    factory reset. APK source: VENDOR_INFO_CLR in cp307_ocpp.proto.
+  fields:
+    sn:
+      name: Charger SN
+      description: PowerPulse serial number. Auto-detected if omitted.
+      required: false
+      selector:
+        text:
+
 set_grid_type:
   name: Set Grid Type
   description: >

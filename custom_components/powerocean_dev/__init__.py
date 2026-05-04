@@ -331,6 +331,94 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
         return await api_entry.async_ocpp_post_backend(body)
 
+    # ── Service: ocpp_get_domain ──────────────────────────────────────────────
+    # GET /iot-service/ac305/charge/ocpp/domain — reads the current OCPP URL
+    # that the charger believes it is connected to (OcppUrlDomain).
+    # APK: o9/b.java:629
+    async def handle_ocpp_get_domain(call: ServiceCall) -> ServiceResponse:
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        if api_entry is None:
+            raise HomeAssistantError("PowerOcean API not available")
+        sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
+        if not sn:
+            raise HomeAssistantError("PowerPulse SN not found; pass 'sn' explicitly")
+        try:
+            return await api_entry.async_ocpp_get_domain(sn)
+        except Exception as err:
+            raise HomeAssistantError(f"ocpp_get_domain failed: {err}") from err
+
+    # ── Service: ocpp_activate_backend ────────────────────────────────────────
+    # Sends vendorInfoSet (CmdID 0xA1 / VENDOR_INFO_SET) to the charger — the
+    # proto-level write that actually redirects it to a custom OCPP CS.
+    # APK: com/ecoflow/cp307module/util/o.java:916, method X()
+    # Also updates the account-side catalog (ocpp_register_backend).
+    async def handle_ocpp_activate_backend(call: ServiceCall) -> ServiceResponse:
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        if api_entry is None:
+            raise HomeAssistantError("PowerOcean API not available")
+        powerpulse_sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
+        if not powerpulse_sn:
+            raise HomeAssistantError("PowerPulse SN not found; pass 'sn' explicitly")
+        inverter_sn = entry.data.get(CONF_DEVICE_ID)
+
+        device_id = call.data["device_id"]
+        backend_url = call.data["backend_url"]
+        vendor = call.data["vendor"]
+        cpo_name = call.data["cpo_name"]
+        profile = call.data["profile"]
+        auth_key = call.data.get("auth_key", "")
+
+        # Try PowerPulse SN first, fall back to inverter — the REST gateway
+        # may proxy sub-device commands through the parent inverter.
+        last_err: Exception | None = None
+        for target in dict.fromkeys([powerpulse_sn, inverter_sn]):
+            if not target:
+                continue
+            try:
+                result = await api_entry.async_ocpp_vendor_info_set(
+                    sn=target,
+                    device_id=device_id,
+                    url=backend_url,
+                    vendor=vendor,
+                    cpo_name=cpo_name,
+                    profile=profile,
+                    auth_key=auth_key,
+                )
+                return {"sn_used": target, "result": result}
+            except Exception as err:  # noqa: BLE001
+                LOGGER.debug("vendorInfoSet via %s failed: %s", target, err)
+                last_err = err
+        raise HomeAssistantError(
+            f"ocpp_activate_backend failed on all targets: {last_err}"
+        ) from last_err
+
+    # ── Service: ocpp_reset_backend ───────────────────────────────────────────
+    # Sends vendorInfoClr (CmdID 0xA3 / VENDOR_INFO_CLR) — reverts the charger
+    # to EcoFlow cloud without a factory reset.
+    # APK: VENDOR_INFO_CLR in cp307_ocpp.proto.
+    async def handle_ocpp_reset_backend(call: ServiceCall) -> ServiceResponse:
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        if api_entry is None:
+            raise HomeAssistantError("PowerOcean API not available")
+        powerpulse_sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
+        if not powerpulse_sn:
+            raise HomeAssistantError("PowerPulse SN not found; pass 'sn' explicitly")
+        inverter_sn = entry.data.get(CONF_DEVICE_ID)
+
+        last_err: Exception | None = None
+        for target in dict.fromkeys([powerpulse_sn, inverter_sn]):
+            if not target:
+                continue
+            try:
+                result = await api_entry.async_ocpp_vendor_info_clr(sn=target)
+                return {"sn_used": target, "result": result}
+            except Exception as err:  # noqa: BLE001
+                LOGGER.debug("vendorInfoClr via %s failed: %s", target, err)
+                last_err = err
+        raise HomeAssistantError(
+            f"ocpp_reset_backend failed on all targets: {last_err}"
+        ) from last_err
+
     # secure_url is required by the EcoFlow endpoint: posting an empty
     # secureUrl returns code 1006 ("安全URL地址不能为空" / "Security URL
     # cannot be empty"), even when backendUrl is a valid ws:// URL.
@@ -383,6 +471,49 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "ocpp_disable_backend",
             handle_ocpp_disable_backend,
             schema=_ocpp_bind_schema,
+            supports_response=SupportsResponse.OPTIONAL,
+        )
+
+    _ocpp_sn_schema = vol.Schema({vol.Optional("sn"): cv.string})
+
+    if not hass.services.has_service(DOMAIN, "ocpp_get_domain"):
+        hass.services.async_register(
+            DOMAIN,
+            "ocpp_get_domain",
+            handle_ocpp_get_domain,
+            schema=_ocpp_sn_schema,
+            supports_response=SupportsResponse.ONLY,
+        )
+
+    _ocpp_activate_schema = vol.Schema(
+        {
+            vol.Required("backend_url"): cv.string,
+            vol.Required("device_id"): cv.string,
+            vol.Optional("sn"): cv.string,
+            vol.Optional("vendor", default="lbbrhzn"): cv.string,
+            vol.Optional("cpo_name", default="HA lbbrhzn/ocpp"): cv.string,
+            vol.Optional("profile", default=0): vol.All(
+                vol.Coerce(int), vol.In([0, 1, 2])
+            ),
+            vol.Optional("auth_key", default=""): cv.string,
+        }
+    )
+
+    if not hass.services.has_service(DOMAIN, "ocpp_activate_backend"):
+        hass.services.async_register(
+            DOMAIN,
+            "ocpp_activate_backend",
+            handle_ocpp_activate_backend,
+            schema=_ocpp_activate_schema,
+            supports_response=SupportsResponse.OPTIONAL,
+        )
+
+    if not hass.services.has_service(DOMAIN, "ocpp_reset_backend"):
+        hass.services.async_register(
+            DOMAIN,
+            "ocpp_reset_backend",
+            handle_ocpp_reset_backend,
+            schema=_ocpp_sn_schema,
             supports_response=SupportsResponse.OPTIONAL,
         )
 
