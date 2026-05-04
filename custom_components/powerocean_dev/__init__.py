@@ -349,65 +349,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             raise HomeAssistantError(f"ocpp_get_domain failed: {err}") from err
 
     # ── Service: ocpp_activate_backend ────────────────────────────────────────
-    # Sends vendorInfoSet (CmdID 0xA1 / VENDOR_INFO_SET) to the charger — the
-    # proto-level write that actually redirects it to a custom OCPP CS.
-    # APK: com/ecoflow/cp307module/util/o.java:916, method X()
-    # Also updates the account-side catalog (ocpp_register_backend).
+    # APK analysis confirmed: the EcoFlow Pro app has NO HTTP endpoint that
+    # writes the OCPP URL to the charger at runtime. Only GET exists for
+    # /iot-service/ac305/charge/ocpp/domain.  The /iot-devices/device/
+    # setDeviceProperty path does NOT appear in the APK at all for OCPP.
+    # The only confirmed runtime path is BLE cmd 770 (ocpp_ble_activate).
+    # This service is kept for legacy callers but immediately raises with
+    # a clear redirect message.
     async def handle_ocpp_activate_backend(call: ServiceCall) -> ServiceResponse:
-        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
-        if api_entry is None:
-            raise HomeAssistantError("PowerOcean API not available")
-        powerpulse_sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
-        if not powerpulse_sn:
-            raise HomeAssistantError("PowerPulse SN not found; pass 'sn' explicitly")
-        inverter_sn = entry.data.get(CONF_DEVICE_ID)
-
-        device_id = call.data["device_id"]
-        backend_url = call.data["backend_url"]
-        vendor = call.data["vendor"]
-        cpo_name = call.data["cpo_name"]
-        profile = call.data["profile"]
-        auth_key = call.data.get("auth_key", "")
-
-        # Strategy 1: POST /iot-service/ac305/charge/ocpp/domain
-        # The GET of this endpoint works and returns {websocketDomain, websocketDomainBackup}.
-        # POST with the same shape is the most likely write counterpart.
-        # Use backend_url for both fields; wss backup defaults to same host on 443
-        # if the url is a ws:// URL.
-        secure_url = backend_url.replace("ws://", "wss://", 1) if backend_url.startswith("ws://") else backend_url
-        try:
-            result = await api_entry.async_ocpp_set_domain(
-                sn=powerpulse_sn,
-                websocket_domain=backend_url,
-                websocket_domain_backup=secure_url,
-            )
-            return {"method": "set_domain", "sn_used": powerpulse_sn, "result": result}
-        except Exception as err:  # noqa: BLE001
-            LOGGER.debug("ocpp/domain POST failed: %s — falling back to vendorInfoSet", err)
-
-        # Strategy 2: vendorInfoSet via setDeviceProperty (proto CmdID 0xA1).
-        # Try PowerPulse SN first, then inverter as proxy.
-        last_err: Exception | None = None
-        for target in dict.fromkeys([powerpulse_sn, inverter_sn]):
-            if not target:
-                continue
-            try:
-                result = await api_entry.async_ocpp_vendor_info_set(
-                    sn=target,
-                    device_id=device_id,
-                    url=backend_url,
-                    vendor=vendor,
-                    cpo_name=cpo_name,
-                    profile=profile,
-                    auth_key=auth_key,
-                )
-                return {"method": "vendor_info_set", "sn_used": target, "result": result}
-            except Exception as err:  # noqa: BLE001
-                LOGGER.debug("vendorInfoSet via %s failed: %s", target, err)
-                last_err = err
         raise HomeAssistantError(
-            f"ocpp_activate_backend failed on all targets: {last_err}"
-        ) from last_err
+            "ocpp_activate_backend: no cloud/HTTP path exists to redirect the "
+            "PowerPulse OCPP server at runtime. "
+            "APK reverse-engineering confirmed the EcoFlow Pro app uses BLE cmd 770 "
+            "(EcoOdmProtocol / SETTING_NETWORK) exclusively. "
+            "Use ocpp_ble_activate instead — it connects via your ESPHome Bluetooth "
+            "proxy, authenticates (BLE cmd 514), and pushes the OCPP URL (cmd 770) "
+            "directly to the charger."
+        )
 
     # ── Service: ocpp_reset_backend ───────────────────────────────────────────
     # Sends vendorInfoClr (CmdID 0xA3 / VENDOR_INFO_CLR) — reverts the charger
