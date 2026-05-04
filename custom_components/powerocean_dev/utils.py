@@ -78,6 +78,10 @@ REPORT_DATAPOINTS: dict[str, set[str]] = {
         "mppt2WarningCode",
         "mppt3FaultCode",
         "mppt3WarningCode",
+        "iot4gSta",
+        "iot4gErr",
+        "wifiStaStat",
+        "ethWanStat",
     },
     ReportMode.BATTERY.value: {
         "bpSn",
@@ -102,6 +106,9 @@ REPORT_DATAPOINTS: dict[str, set[str]] = {
     ReportMode.EMS.value: {
         "bpRemainWatth",
         "emsBpAliveNum",
+        "emsNtcTempMax",
+        "pcsAcFreq",
+        "pcsLeakAmp",
         "emsBpPower",
         "emsBpSelfcheckState",
         "emsMpptSelfcheckState",
@@ -189,6 +196,11 @@ REPORT_DATAPOINTS: dict[str, set[str]] = {
         "chargeVehicleId",
         "chargingStatus",
         "evPwr",
+        "stopChargingSoc",
+        "evPlugAndPlay",
+        "expectChargingEnergy",
+        "evDetectPhase",
+        "evExeMode",
     },
     ReportMode.HEATING_ROD.value: {
         "hrSn",
