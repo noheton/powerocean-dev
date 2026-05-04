@@ -321,14 +321,16 @@ ocpp_get_domain:
         text:
 
 ocpp_activate_backend:
-  name: OCPP — Activate Backend (Runtime Handover)
+  name: OCPP — Activate Backend (DEPRECATED — use ocpp_ble_activate)
   description: >
-    Send vendorInfoSet (CmdID 0xA1 / VENDOR_INFO_SET) directly to the
-    PowerPulse charger — the proto-level write that actually redirects it
-    to a custom OCPP 1.6 central system. This is the step that the
-    catalog-only ocpp_register_backend service does NOT perform.
-    APK source: com/ecoflow/cp307module/util/o.java:916.
-    The charger reconnects to backend_url immediately on success.
+    DEPRECATED. APK reverse-engineering confirmed that no cloud/HTTP path
+    exists to redirect the PowerPulse OCPP server at runtime.
+    The /iot-devices/device/setDeviceProperty endpoint is not used for OCPP
+    in the EcoFlow Pro app and returns 400 Bad Request.
+    This service now immediately raises an error with instructions.
+
+    Use ocpp_ble_activate instead — it sends BLE cmd 770 (SETTING_NETWORK)
+    directly to the charger via your ESPHome Bluetooth proxy.
   fields:
     backend_url:
       name: Backend URL
