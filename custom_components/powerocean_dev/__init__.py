@@ -52,6 +52,7 @@ from .const import (
     PLATFORMS,
     PowerOceanModel,
 )
+from .ble_ocpp import async_ble_set_ocpp_url
 from .coordinator import PowerOceanCoordinator
 from .ecoflow import HAEcoflowApi
 from .parser import EcoflowParser
@@ -435,6 +436,55 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"ocpp_reset_backend failed on all targets: {last_err}"
         ) from last_err
 
+    # ── Service: ocpp_ble_activate ────────────────────────────────────────────
+    # Directly sends the OCPP server URL to the PowerPulse charger via BLE.
+    # Requires an ESPHome Bluetooth proxy (or local BLE adapter) in range.
+    # Auth key = MD5(userId + sn) uppercase hex, as per APK q4.r / c0.V.
+    # Cmd 514 (AUTH_WRITE) then Cmd 770 (SETTING_NETWORK).
+    async def handle_ocpp_ble_activate(call: ServiceCall) -> ServiceResponse:
+        api_entry = hass.data[DOMAIN].get(entry.entry_id, {}).get("api")
+        if api_entry is None:
+            raise HomeAssistantError("PowerOcean API not available")
+
+        ble_address: str = call.data["ble_address"]
+        ocpp_url: str = call.data["ocpp_url"]
+        backup_url: str = call.data.get("backup_url") or ocpp_url
+        wifi_ssid: str = call.data.get("wifi_ssid", "")
+        wifi_password: str = call.data.get("wifi_password", "")
+        connect_timeout: float = float(call.data.get("connect_timeout", 15))
+        response_timeout: float = float(call.data.get("response_timeout", 8))
+
+        # Resolve charger SN: explicit > auto-discovered PowerPulse SN
+        sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
+        if not sn:
+            raise HomeAssistantError("PowerPulse SN not found; pass 'sn' explicitly")
+
+        # Resolve user ID: explicit > stored from last auth
+        user_id: str = call.data.get("user_id") or getattr(api_entry, "user_id", "") or ""
+        if not user_id:
+            raise HomeAssistantError(
+                "EcoFlow user_id not available — pass 'user_id' explicitly "
+                "(find it via Developer Tools → check EcoFlow login response)"
+            )
+
+        try:
+            result = await async_ble_set_ocpp_url(
+                hass=hass,
+                ble_address=ble_address,
+                user_id=user_id,
+                sn=sn,
+                ocpp_url=ocpp_url,
+                backup_url=backup_url,
+                wifi_ssid=wifi_ssid,
+                wifi_password=wifi_password,
+                connect_timeout=connect_timeout,
+                response_timeout=response_timeout,
+            )
+        except (ValueError, RuntimeError) as exc:
+            raise HomeAssistantError(str(exc)) from exc
+
+        return result
+
     # secure_url is required by the EcoFlow endpoint: posting an empty
     # secureUrl returns code 1006 ("安全URL地址不能为空" / "Security URL
     # cannot be empty"), even when backendUrl is a valid ws:// URL.
@@ -530,6 +580,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "ocpp_reset_backend",
             handle_ocpp_reset_backend,
             schema=_ocpp_sn_schema,
+            supports_response=SupportsResponse.OPTIONAL,
+        )
+
+    _ocpp_ble_schema = vol.Schema(
+        {
+            vol.Required("ble_address"): cv.string,
+            vol.Required("ocpp_url"): cv.string,
+            vol.Optional("backup_url"): cv.string,
+            vol.Optional("sn"): cv.string,
+            vol.Optional("user_id"): cv.string,
+            vol.Optional("wifi_ssid", default=""): cv.string,
+            vol.Optional("wifi_password", default=""): cv.string,
+            vol.Optional("connect_timeout", default=15): vol.Coerce(float),
+            vol.Optional("response_timeout", default=8): vol.Coerce(float),
+        }
+    )
+
+    if not hass.services.has_service(DOMAIN, "ocpp_ble_activate"):
+        hass.services.async_register(
+            DOMAIN,
+            "ocpp_ble_activate",
+            handle_ocpp_ble_activate,
+            schema=_ocpp_ble_schema,
             supports_response=SupportsResponse.OPTIONAL,
         )
 
