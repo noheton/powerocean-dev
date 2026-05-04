@@ -9,6 +9,11 @@ Reverse-engineered from EcoFlow Pro APK (com.ecoflow.pro):
 - Cmd 514:   AUTH_WRITE   – first-time bind (setOdmAuthentication)
 - Cmd 515:   AUTH_CHECK   – re-verify existing bind (checkOdmAuthentication)
 - Cmd 770:   SETTING_NETWORK – write WiFi + OCPP URL
+
+BLE advertisement name pattern (observed):
+  "EF-" + sn[0:4] + sn[-4:]
+  e.g. SN "AC31ZEH4AG130052" → "EF-AC310052"
+       SN "HJ37ZDH5ZG5W0109" → "EF-HJ370109"   (inverter)
 """
 
 from __future__ import annotations
@@ -31,6 +36,19 @@ CMD_AUTH_STATUS = 513    # 0x0201
 CMD_AUTH_WRITE = 514     # 0x0202  setOdmAuthentication
 CMD_AUTH_CHECK = 515     # 0x0203  checkOdmAuthentication
 CMD_SETTING_NETWORK = 770  # 0x0302  WiFi + OCPP URL
+
+# ── Per-address connection lock (prevents simultaneous BLE sessions) ──────────
+# Key: normalised BLE MAC address.  One asyncio.Lock per charger address so
+# that two HA automations firing at the same time queue rather than race.
+_BLE_LOCKS: dict[str, asyncio.Lock] = {}
+
+
+def _ble_lock(address: str) -> asyncio.Lock:
+    key = address.upper()
+    if key not in _BLE_LOCKS:
+        _BLE_LOCKS[key] = asyncio.Lock()
+    return _BLE_LOCKS[key]
+
 
 # ── CRC tables (CrcUtils.java) ───────────────────────────────────────────────
 _CRC8_TABLE = [
@@ -135,6 +153,32 @@ def odm_auth_key(user_id: str, sn: str) -> bytes:
     return digest.encode("ascii")
 
 
+def ble_name_for_sn(sn: str) -> str:
+    """
+    Return the expected BLE advertisement name for a given device SN.
+
+    Pattern observed from advertisement monitor:
+      "EF-" + sn[0:4] + sn[-4:]
+    e.g. "AC31ZEH4AG130052" → "EF-AC310052"
+         "HJ37ZDH5ZG5W0109" → "EF-HJ370109"
+    """
+    return f"EF-{sn[:4]}{sn[-4:]}"
+
+
+def _sn_matches_ble_name(sn: str, ble_name: str | None) -> bool:
+    """Return True if the BLE name is consistent with the SN."""
+    if not ble_name or not ble_name.startswith("EF-"):
+        return False
+    suffix = ble_name[3:]  # strip "EF-"
+    # Primary check: name == sn[:4] + sn[-4:]
+    if suffix == sn[:4] + sn[-4:]:
+        return True
+    # Fallback: name ends with last 4 chars of SN (covers edge cases)
+    if len(sn) >= 4 and suffix.endswith(sn[-4:]):
+        return True
+    return False
+
+
 def _auth_payload(secret_key: bytes) -> bytes:
     """Prepend [0x00] (non-installer flag) before the secret key bytes."""
     return b"\x00" + secret_key
@@ -163,6 +207,59 @@ def _network_payload(
     return _field(wifi_ssid) + _field(wifi_password) + _field(ocpp_url) + _field(backup_url)
 
 
+async def async_find_charger_address(hass: HomeAssistant, sn: str) -> str | None:
+    """
+    Scan HA's Bluetooth registry for the PowerPulse charger matching *sn*.
+
+    The charger advertises as "EF-" + sn[0:4] + sn[-4:], e.g. "EF-AC310052".
+    Returns the BLE MAC address string, or None if not found.
+    """
+    try:
+        from homeassistant.components.bluetooth import (  # noqa: PLC0415
+            async_scanner_devices_by_address,
+            async_discovered_service_info,
+        )
+    except ImportError:
+        return None
+
+    expected_name = ble_name_for_sn(sn)
+    _LOGGER.debug("ble_ocpp: looking for BLE device named %s (sn=%s)", expected_name, sn)
+
+    # Iterate all currently-visible BLE advertisements
+    try:
+        service_infos = async_discovered_service_info(hass, connectable=True)
+    except Exception:  # noqa: BLE001
+        service_infos = []
+
+    best_address: str | None = None
+    best_rssi: int = -200
+
+    for info in service_infos:
+        name = info.name or ""
+        if _sn_matches_ble_name(sn, name):
+            rssi = getattr(info, "rssi", -200) or -200
+            _LOGGER.debug(
+                "ble_ocpp: candidate %s name=%s rssi=%d", info.address, name, rssi
+            )
+            if best_address is None or rssi > best_rssi:
+                best_address = info.address
+                best_rssi = rssi
+
+    if best_address:
+        _LOGGER.info(
+            "ble_ocpp: auto-detected charger %s at %s (rssi=%d)",
+            expected_name,
+            best_address,
+            best_rssi,
+        )
+    else:
+        _LOGGER.warning(
+            "ble_ocpp: charger %s not found in BLE advertisements", expected_name
+        )
+
+    return best_address
+
+
 async def async_ble_set_ocpp_url(
     hass: HomeAssistant,
     ble_address: str,
@@ -182,6 +279,10 @@ async def async_ble_set_ocpp_url(
     Bluetooth integration (or an ESPHome Bluetooth proxy) must have the
     device in range.
 
+    A per-address asyncio.Lock serialises concurrent calls so that two
+    automations firing simultaneously queue rather than race for the BLE
+    connection.
+
     Returns a dict with auth_response and network_response summaries.
     """
     try:
@@ -193,109 +294,145 @@ async def async_ble_set_ocpp_url(
         msg = "bleak or homeassistant.components.bluetooth not available"
         raise RuntimeError(msg) from exc
 
-    ble_device = async_ble_device_from_address(hass, ble_address, connectable=True)
-    if ble_device is None:
-        msg = f"BLE device {ble_address} not found — check ESPHome proxy and range"
-        raise ValueError(msg)
+    lock = _ble_lock(ble_address)
+    if lock.locked():
+        _LOGGER.info(
+            "ble_ocpp: %s is already in use — queuing (another call is active)",
+            ble_address,
+        )
 
-    secret_key = odm_auth_key(user_id, sn)
-    _LOGGER.debug(
-        "ble_ocpp: connecting to %s, secretKey=%s (first 8 chars)", ble_address, secret_key[:8].decode()
-    )
+    async with lock:
+        ble_device = async_ble_device_from_address(hass, ble_address, connectable=True)
+        if ble_device is None:
+            msg = f"BLE device {ble_address} not found — check ESPHome proxy and range"
+            raise ValueError(msg)
 
-    recv_queue: asyncio.Queue[bytes] = asyncio.Queue()
+        secret_key = odm_auth_key(user_id, sn)
+        _LOGGER.debug(
+            "ble_ocpp: connecting to %s, secretKey prefix=%s",
+            ble_address,
+            secret_key[:8].decode(),
+        )
 
-    def _on_notify(_sender: int, data: bytearray) -> None:
-        _LOGGER.debug("ble_ocpp: notify %d bytes: %s", len(data), data.hex())
-        recv_queue.put_nowait(bytes(data))
+        recv_queue: asyncio.Queue[bytes] = asyncio.Queue()
 
-    async def _wait_response(timeout: float) -> tuple[int, bytes] | None:
-        """Drain the queue and return the first parseable packet, or None."""
-        deadline = asyncio.get_event_loop().time() + timeout
-        buf = bytearray()
-        while True:
-            remaining = deadline - asyncio.get_event_loop().time()
-            if remaining <= 0:
-                break
-            try:
-                chunk = await asyncio.wait_for(recv_queue.get(), timeout=remaining)
-                buf.extend(chunk)
-                parsed = parse_odm_packet(bytes(buf))
-                if parsed is not None:
-                    return parsed
-            except TimeoutError:
-                break
-        return None
+        def _on_notify(_sender: int, data: bytearray) -> None:
+            _LOGGER.debug("ble_ocpp: notify %d bytes: %s", len(data), data.hex())
+            recv_queue.put_nowait(bytes(data))
 
-    try:
-        async with BleakClient(ble_device, timeout=connect_timeout) as client:
-            # ── Discover FFF0 service characteristics ─────────────────────
-            service = client.services.get_service(ECOFLOW_ODM_SERVICE)
-            if service is None:
-                msg = f"FFF0 service not found on {ble_address}"
-                raise ValueError(msg)
+        async def _wait_response(timeout: float) -> tuple[int, bytes] | None:
+            """Drain notify queue, accumulate bytes, return first parseable packet."""
+            deadline = asyncio.get_event_loop().time() + timeout
+            buf = bytearray()
+            while True:
+                remaining = deadline - asyncio.get_event_loop().time()
+                if remaining <= 0:
+                    break
+                try:
+                    chunk = await asyncio.wait_for(recv_queue.get(), timeout=remaining)
+                    buf.extend(chunk)
+                    parsed = parse_odm_packet(bytes(buf))
+                    if parsed is not None:
+                        return parsed
+                except TimeoutError:
+                    break
+            return None
 
-            write_char = None
-            notify_char = None
-            for char in service.characteristics:
-                props = set(char.properties)
-                if write_char is None and ("write" in props or "write-without-response" in props):
-                    write_char = char
-                if notify_char is None and "notify" in props:
-                    notify_char = char
+        try:
+            async with BleakClient(ble_device, timeout=connect_timeout) as client:
+                # ── Discover FFF0 service characteristics ─────────────────
+                service = client.services.get_service(ECOFLOW_ODM_SERVICE)
+                if service is None:
+                    msg = f"FFF0 service not found on {ble_address}"
+                    raise ValueError(msg)
 
-            if write_char is None:
-                msg = f"No writable characteristic in FFF0 service on {ble_address}"
-                raise ValueError(msg)
-            if notify_char is None:
-                msg = f"No notify characteristic in FFF0 service on {ble_address}"
-                raise ValueError(msg)
+                write_char = None
+                notify_char = None
+                for char in service.characteristics:
+                    props = set(char.properties)
+                    if write_char is None and (
+                        "write" in props or "write-without-response" in props
+                    ):
+                        write_char = char
+                    if notify_char is None and "notify" in props:
+                        notify_char = char
 
-            _LOGGER.debug(
-                "ble_ocpp: write=%s notify=%s", write_char.uuid, notify_char.uuid
-            )
+                if write_char is None:
+                    msg = f"No writable characteristic in FFF0 service on {ble_address}"
+                    raise ValueError(msg)
+                if notify_char is None:
+                    msg = f"No notify characteristic in FFF0 service on {ble_address}"
+                    raise ValueError(msg)
 
-            await client.start_notify(notify_char.uuid, _on_notify)
-
-            # ── Step 1: AUTH_WRITE (cmd 514) ──────────────────────────────
-            auth_cmd = build_odm_packet(CMD_AUTH_WRITE, _auth_payload(secret_key))
-            _LOGGER.debug("ble_ocpp: sending AUTH_WRITE cmd=%d payload=%s", CMD_AUTH_WRITE, auth_cmd.hex())
-            use_response = "write" in set(write_char.properties)
-            await client.write_gatt_char(write_char.uuid, auth_cmd, response=use_response)
-
-            auth_result = await _wait_response(response_timeout)
-            if auth_result is None:
-                _LOGGER.warning(
-                    "ble_ocpp: no auth response within %.1fs — proceeding anyway", response_timeout
+                _LOGGER.debug(
+                    "ble_ocpp: write=%s notify=%s",
+                    write_char.uuid,
+                    notify_char.uuid,
                 )
-                auth_summary = "timeout"
-            else:
-                auth_summary = f"cmd=0x{auth_result[0]:04X} payload={auth_result[1].hex()}"
-                _LOGGER.debug("ble_ocpp: AUTH response: %s", auth_summary)
 
-            # ── Step 2: SETTING_NETWORK (cmd 770) ─────────────────────────
-            net_payload = _network_payload(wifi_ssid, wifi_password, ocpp_url, backup_url)
-            net_cmd = build_odm_packet(CMD_SETTING_NETWORK, net_payload)
-            _LOGGER.debug(
-                "ble_ocpp: sending SETTING_NETWORK cmd=%d payload=%s",
-                CMD_SETTING_NETWORK,
-                net_cmd.hex(),
-            )
-            await client.write_gatt_char(write_char.uuid, net_cmd, response=use_response)
+                await client.start_notify(notify_char.uuid, _on_notify)
+                use_response = "write" in set(write_char.properties)
 
-            net_result = await _wait_response(response_timeout)
-            if net_result is None:
-                net_summary = "timeout"
-                _LOGGER.warning("ble_ocpp: no network-config response within %.1fs", response_timeout)
-            else:
-                net_summary = f"cmd=0x{net_result[0]:04X} payload={net_result[1].hex()}"
-                _LOGGER.debug("ble_ocpp: SETTING_NETWORK response: %s", net_summary)
+                # ── Step 1: AUTH_WRITE (cmd 514) ──────────────────────────
+                auth_cmd = build_odm_packet(
+                    CMD_AUTH_WRITE, _auth_payload(secret_key)
+                )
+                _LOGGER.debug(
+                    "ble_ocpp: AUTH_WRITE cmd=%d hex=%s",
+                    CMD_AUTH_WRITE,
+                    auth_cmd.hex(),
+                )
+                await client.write_gatt_char(
+                    write_char.uuid, auth_cmd, response=use_response
+                )
 
-            await client.stop_notify(notify_char.uuid)
+                auth_result = await _wait_response(response_timeout)
+                if auth_result is None:
+                    _LOGGER.warning(
+                        "ble_ocpp: no auth response within %.1fs — proceeding",
+                        response_timeout,
+                    )
+                    auth_summary = "timeout"
+                else:
+                    auth_summary = (
+                        f"cmd=0x{auth_result[0]:04X} payload={auth_result[1].hex()}"
+                    )
+                    _LOGGER.debug("ble_ocpp: AUTH response: %s", auth_summary)
 
-    except BleakError as exc:
-        msg = f"BLE error communicating with {ble_address}: {exc}"
-        raise RuntimeError(msg) from exc
+                # ── Step 2: SETTING_NETWORK (cmd 770) ─────────────────────
+                net_payload = _network_payload(
+                    wifi_ssid, wifi_password, ocpp_url, backup_url
+                )
+                net_cmd = build_odm_packet(CMD_SETTING_NETWORK, net_payload)
+                _LOGGER.debug(
+                    "ble_ocpp: SETTING_NETWORK cmd=%d hex=%s",
+                    CMD_SETTING_NETWORK,
+                    net_cmd.hex(),
+                )
+                await client.write_gatt_char(
+                    write_char.uuid, net_cmd, response=use_response
+                )
+
+                net_result = await _wait_response(response_timeout)
+                if net_result is None:
+                    net_summary = "timeout"
+                    _LOGGER.warning(
+                        "ble_ocpp: no network-config response within %.1fs",
+                        response_timeout,
+                    )
+                else:
+                    net_summary = (
+                        f"cmd=0x{net_result[0]:04X} payload={net_result[1].hex()}"
+                    )
+                    _LOGGER.debug(
+                        "ble_ocpp: SETTING_NETWORK response: %s", net_summary
+                    )
+
+                await client.stop_notify(notify_char.uuid)
+
+        except BleakError as exc:
+            msg = f"BLE error communicating with {ble_address}: {exc}"
+            raise RuntimeError(msg) from exc
 
     return {
         "ble_address": ble_address,

@@ -10,6 +10,13 @@ ocpp_ble_activate:
     using BLE cmd 514 (AUTH_WRITE, secret = MD5(userId+sn)), then sends
     cmd 770 (SETTING_NETWORK) with the WiFi credentials and OCPP URL.
 
+    The BLE address is auto-detected from the charger SN — the charger
+    advertises as "EF-" + sn[0:4] + sn[-4:] (e.g. "EF-AC310052").
+    Pass ble_address explicitly to override auto-detection.
+
+    Concurrent calls are serialised per BLE address — if two automations
+    fire simultaneously the second one queues rather than races.
+
     WiFi fields (wifi_ssid / wifi_password) are included in the payload but
     can be left empty if the charger is already on WiFi and you only want to
     change the OCPP server.  The charger stores all four fields atomically.
@@ -20,10 +27,11 @@ ocpp_ble_activate:
     ble_address:
       name: BLE Address
       description: >
-        Bluetooth MAC address of the PowerPulse charger, e.g. AA:BB:CC:DD:EE:FF.
-        Visible in the ESPHome Bluetooth proxy log or EcoFlow app device info.
-      required: true
-      example: "AA:BB:CC:DD:EE:FF"
+        Bluetooth MAC address of the PowerPulse charger, e.g. C8:2E:18:C2:7C:3A.
+        Auto-detected from the charger SN ("EF-AC310052" advertisement pattern)
+        if omitted.  Override when multiple chargers share the same proxy.
+      required: false
+      example: "C8:2E:18:C2:7C:3A"
       selector:
         text:
     ocpp_url:

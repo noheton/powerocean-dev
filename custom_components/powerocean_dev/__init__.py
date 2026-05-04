@@ -52,7 +52,7 @@ from .const import (
     PLATFORMS,
     PowerOceanModel,
 )
-from .ble_ocpp import async_ble_set_ocpp_url
+from .ble_ocpp import async_ble_set_ocpp_url, async_find_charger_address
 from .coordinator import PowerOceanCoordinator
 from .ecoflow import HAEcoflowApi
 from .parser import EcoflowParser
@@ -397,6 +397,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # ── Service: ocpp_ble_activate ────────────────────────────────────────────
     # Directly sends the OCPP server URL to the PowerPulse charger via BLE.
     # Requires an ESPHome Bluetooth proxy (or local BLE adapter) in range.
+    # BLE address is auto-detected from the SN ("EF-AC310052" pattern) if
+    # omitted. A per-address asyncio.Lock serialises concurrent calls.
     # Auth key = MD5(userId + sn) uppercase hex, as per APK q4.r / c0.V.
     # Cmd 514 (AUTH_WRITE) then Cmd 770 (SETTING_NETWORK).
     async def handle_ocpp_ble_activate(call: ServiceCall) -> ServiceResponse:
@@ -404,7 +406,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if api_entry is None:
             raise HomeAssistantError("PowerOcean API not available")
 
-        ble_address: str = call.data["ble_address"]
         ocpp_url: str = call.data["ocpp_url"]
         backup_url: str = call.data.get("backup_url") or ocpp_url
         wifi_ssid: str = call.data.get("wifi_ssid", "")
@@ -416,6 +417,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         sn = call.data.get("sn") or _resolve_powerpulse_sn(hass, entry)
         if not sn:
             raise HomeAssistantError("PowerPulse SN not found; pass 'sn' explicitly")
+
+        # Resolve BLE address: explicit > auto-detect from SN via advertisement scan
+        ble_address: str | None = call.data.get("ble_address") or None
+        if not ble_address:
+            ble_address = await async_find_charger_address(hass, sn)
+            if not ble_address:
+                expected = f"EF-{sn[:4]}{sn[-4:]}"
+                raise HomeAssistantError(
+                    f"PowerPulse BLE address not found — charger not visible to any "
+                    f"Bluetooth proxy. Expected advertisement name: {expected!r}. "
+                    "Pass 'ble_address' explicitly or ensure ESPHome proxy is in range."
+                )
+            LOGGER.info("ble_ocpp: auto-detected BLE address %s for SN %s", ble_address, sn)
 
         # Resolve user ID: explicit > stored from last auth
         user_id: str = call.data.get("user_id") or getattr(api_entry, "user_id", "") or ""
@@ -543,7 +557,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     _ocpp_ble_schema = vol.Schema(
         {
-            vol.Required("ble_address"): cv.string,
+            vol.Optional("ble_address"): cv.string,
             vol.Required("ocpp_url"): cv.string,
             vol.Optional("backup_url"): cv.string,
             vol.Optional("sn"): cv.string,
