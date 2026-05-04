@@ -482,6 +482,41 @@ class EcoflowApi:
             msg = f"ocpp/domain for {sn} failed: {err}"
             raise EcoflowApiError(msg) from err
 
+    async def async_ocpp_set_domain(
+        self,
+        sn: str,
+        websocket_domain: str,
+        websocket_domain_backup: str,
+    ) -> dict[str, Any]:
+        """POST /iot-service/ac305/charge/ocpp/domain — set the runtime OCPP URL.
+
+        Mirror of the GET /domain read. Sends the same OcppUrlDomain shape back
+        as a POST to redirect the charger to a custom central system.
+        """
+        if not self.api_host:
+            msg = "Region not detected; cannot set OCPP domain"
+            raise EcoflowApiError(msg)
+
+        session = await self._get_session()
+        url = f"https://{self.api_host}/iot-service/ac305/charge/ocpp/domain"
+        headers = {
+            "authorization": f"Bearer {self.token}",
+            "content-type": "application/json",
+        }
+        body = {
+            "sn": sn,
+            "websocketDomain": websocket_domain,
+            "websocketDomainBackup": websocket_domain_backup,
+        }
+        try:
+            async with asyncio.timeout(10):
+                async with session.post(url, json=body, headers=headers) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
+        except (TimeoutError, aiohttp.ClientError) as err:
+            msg = f"ocpp/domain POST for {sn} failed: {err}"
+            raise EcoflowApiError(msg) from err
+
     async def async_ocpp_vendor_info_set(
         self,
         sn: str,

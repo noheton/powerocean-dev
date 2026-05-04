@@ -368,8 +368,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         profile = call.data["profile"]
         auth_key = call.data.get("auth_key", "")
 
-        # Try PowerPulse SN first, fall back to inverter — the REST gateway
-        # may proxy sub-device commands through the parent inverter.
+        # Strategy 1: POST /iot-service/ac305/charge/ocpp/domain
+        # The GET of this endpoint works and returns {websocketDomain, websocketDomainBackup}.
+        # POST with the same shape is the most likely write counterpart.
+        # Use backend_url for both fields; wss backup defaults to same host on 443
+        # if the url is a ws:// URL.
+        secure_url = backend_url.replace("ws://", "wss://", 1) if backend_url.startswith("ws://") else backend_url
+        try:
+            result = await api_entry.async_ocpp_set_domain(
+                sn=powerpulse_sn,
+                websocket_domain=backend_url,
+                websocket_domain_backup=secure_url,
+            )
+            return {"method": "set_domain", "sn_used": powerpulse_sn, "result": result}
+        except Exception as err:  # noqa: BLE001
+            LOGGER.debug("ocpp/domain POST failed: %s — falling back to vendorInfoSet", err)
+
+        # Strategy 2: vendorInfoSet via setDeviceProperty (proto CmdID 0xA1).
+        # Try PowerPulse SN first, then inverter as proxy.
         last_err: Exception | None = None
         for target in dict.fromkeys([powerpulse_sn, inverter_sn]):
             if not target:
@@ -384,7 +400,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     profile=profile,
                     auth_key=auth_key,
                 )
-                return {"sn_used": target, "result": result}
+                return {"method": "vendor_info_set", "sn_used": target, "result": result}
             except Exception as err:  # noqa: BLE001
                 LOGGER.debug("vendorInfoSet via %s failed: %s", target, err)
                 last_err = err
