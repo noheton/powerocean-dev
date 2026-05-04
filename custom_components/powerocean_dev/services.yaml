@@ -38,6 +38,15 @@ ocpp_register_backend:
     runtime handover requires a proto write (vendorInfoSet) that is not
     yet shipped.
   fields:
+    id:
+      name: Record ID
+      description: >
+        Optional numeric string id of an existing backend record to update
+        in-place. Leave empty to create a new record.
+      required: false
+      example: "2051321124647497730"
+      selector:
+        text:
     backend_url:
       name: Backend URL
       description: "ws:// URL of the central system, e.g. ws://homeassistant.local:9000"
@@ -135,8 +144,20 @@ ocpp_disable_backend:
   description: >
     Mark an OCPP backend as inactive in the EcoFlow account catalog
     (POST with isEnabled=0). No HTTP DELETE exists; this is the
-    documented "tidy" path.
+    documented "tidy" path. Pass the id from ocpp_list_backends so
+    the API can match the exact record — without it the update is
+    silently ignored.
   fields:
+    id:
+      name: Record ID
+      description: >
+        Numeric string id of the backend record, from ocpp_list_backends.
+        Required to target an existing record; without it the API ignores
+        the update.
+      required: true
+      example: "2051321124647497730"
+      selector:
+        text:
     backend_url:
       name: Backend URL
       description: "Same URL used when registering."

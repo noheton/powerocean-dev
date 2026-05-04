@@ -73,7 +73,7 @@ def _build_ocpp_bind_req(
     data: dict, sn: str, enabled: bool
 ) -> dict[str, object]:
     """Construct a CPOcppBindReq dict from service data."""
-    return {
+    req: dict[str, object] = {
         "platformCode": data["platform_code"],
         "platformName": data["platform_name"],
         "platformType": data["platform_type"],
@@ -84,6 +84,9 @@ def _build_ocpp_bind_req(
         "isEnabled": 1 if enabled else 0,
         "sn": sn,
     }
+    if record_id := data.get("id"):
+        req["id"] = record_id
+    return req
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -339,6 +342,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         {
             vol.Required("backend_url"): cv.string,
             vol.Required("secure_url"): cv.string,
+            vol.Optional("id"): cv.string,
             vol.Optional("sn"): cv.string,
             vol.Optional("platform_code", default="lbbrhzn"): cv.string,
             vol.Optional("platform_name", default="HA lbbrhzn/ocpp"): cv.string,
