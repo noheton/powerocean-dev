@@ -517,8 +517,11 @@ class EcoflowApi:
             "product-type": self.variant,
             "content-type": "application/json",
         }
-        # The REST gateway may translate this nested structure to the proto
-        # Cp307Ocpp.vendorInfoSet message (CmdID 0xA1 / module 53 / cmd_set 224).
+        # setDeviceProperty requires a top-level "propertyNames" list — code 1006
+        # ("propertyNames 不能为空") is returned when it is absent or empty.
+        # Try flat field names first (what the REST gateway likely expects for
+        # a proto with named fields). The nested "vendorInfoSet" key is also
+        # included in case the gateway routes by message name.
         params: dict[str, Any] = {
             "vendorInfoSet": {
                 "deviceId": device_id,
@@ -529,7 +532,11 @@ class EcoflowApi:
                 "authKey": auth_key,
             }
         }
-        payload: dict[str, Any] = {"sn": sn, "params": params}
+        payload: dict[str, Any] = {
+            "sn": sn,
+            "propertyNames": list(params.keys()),
+            "params": params,
+        }
         try:
             async with asyncio.timeout(10):
                 async with session.post(
@@ -557,7 +564,11 @@ class EcoflowApi:
             "product-type": self.variant,
             "content-type": "application/json",
         }
-        payload: dict[str, Any] = {"sn": sn, "params": {"vendorInfoClr": {}}}
+        payload: dict[str, Any] = {
+            "sn": sn,
+            "propertyNames": ["vendorInfoClr"],
+            "params": {"vendorInfoClr": {}},
+        }
         try:
             async with asyncio.timeout(10):
                 async with session.post(
