@@ -1,3 +1,109 @@
+ocpp_ble_activate:
+  name: OCPP — BLE Activate (direct to charger)
+  description: >
+    Send the OCPP central-system URL directly to the PowerPulse charger
+    over Bluetooth Low Energy.  This is the only runtime path confirmed
+    to work — the cloud API has no equivalent write endpoint.
+
+    Requires an ESPHome Bluetooth proxy (or local BLE adapter) in range of
+    the charger.  The integration connects, authenticates with the charger
+    using BLE cmd 514 (AUTH_WRITE, secret = MD5(userId+sn)), then sends
+    cmd 770 (SETTING_NETWORK) with the WiFi credentials and OCPP URL.
+
+    WiFi fields (wifi_ssid / wifi_password) are included in the payload but
+    can be left empty if the charger is already on WiFi and you only want to
+    change the OCPP server.  The charger stores all four fields atomically.
+
+    Source: EcoFlow Pro APK — EcoOdmPacket, TreatyConstantsByOdm,
+            ODMBleSynchronousActivity, c7/b.java L().
+  fields:
+    ble_address:
+      name: BLE Address
+      description: >
+        Bluetooth MAC address of the PowerPulse charger, e.g. AA:BB:CC:DD:EE:FF.
+        Visible in the ESPHome Bluetooth proxy log or EcoFlow app device info.
+      required: true
+      example: "AA:BB:CC:DD:EE:FF"
+      selector:
+        text:
+    ocpp_url:
+      name: OCPP URL
+      description: >
+        Primary OCPP 1.6-J central system URL.  Do NOT append the charge-point
+        identity — the charger appends its own device ID per OCPP-J §3.1.1.
+        Example: ws://192.168.1.60:8887/
+      required: true
+      example: "ws://192.168.1.60:8887/"
+      selector:
+        text:
+    backup_url:
+      name: Backup URL
+      description: >
+        Fallback OCPP URL. Defaults to the same as ocpp_url if omitted.
+      required: false
+      example: "ws://192.168.1.60:8887/"
+      selector:
+        text:
+    sn:
+      name: Charger SN
+      description: >
+        PowerPulse serial number (e.g. AC31ZEH4AG130052).
+        Auto-detected from the integration entry if omitted.
+      required: false
+      selector:
+        text:
+    user_id:
+      name: EcoFlow User ID
+      description: >
+        Your EcoFlow account numeric user ID.  Used to derive the BLE auth key:
+        MD5(userId + sn).toUpperCase().  Auto-detected from the last login
+        response if omitted; pass explicitly if auto-detection fails.
+        Find it in HA logs (enable debug) or EcoFlow app network traffic.
+      required: false
+      selector:
+        text:
+    wifi_ssid:
+      name: WiFi SSID
+      description: >
+        WiFi network name to write to the charger. Leave empty to keep the
+        existing WiFi config (the charger stores this field but only applies
+        it on reconnect).
+      required: false
+      default: ""
+      selector:
+        text:
+    wifi_password:
+      name: WiFi Password
+      description: WiFi password. Leave empty to keep the existing password.
+      required: false
+      default: ""
+      selector:
+        text:
+    connect_timeout:
+      name: Connect Timeout (s)
+      description: BLE connection timeout in seconds.
+      required: false
+      default: 15
+      selector:
+        number:
+          mode: box
+          min: 5
+          max: 60
+          unit_of_measurement: s
+    response_timeout:
+      name: Response Timeout (s)
+      description: >
+        Seconds to wait for a BLE response after each command.
+        If the charger does not reply, the next command is sent anyway.
+      required: false
+      default: 8
+      selector:
+        number:
+          mode: box
+          min: 2
+          max: 30
+          unit_of_measurement: s
+
 set_tou_schedule:
   name: Set TOU Schedule
   description: >

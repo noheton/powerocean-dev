@@ -89,6 +89,7 @@ class EcoflowApi:
         self.variant = variant
 
         self.token: str | None = None
+        self.user_id: str = ""
         self.api_host: str | None = None
         self.url_authorize = "https://api.ecoflow.com/auth/login"
 
@@ -136,6 +137,9 @@ class EcoflowApi:
             raise AuthenticationError(msg)
 
         self.token = token
+        # EcoFlow login response: token is at data.token, userId at data.user.userId
+        user_node = response_data.get("data", {}).get("user", {}) or {}
+        self.user_id: str = str(user_node.get("userId", "") or response_data.get("data", {}).get("userId", "") or "")
         await self._detect_region()
 
     async def _detect_region(self) -> None:
@@ -221,6 +225,8 @@ class EcoflowApi:
             raise AuthenticationError(msg)
 
         self.token = token
+        user_node = response_data.get("data", {}).get("user", {}) or {}
+        self.user_id = str(user_node.get("userId", "") or response_data.get("data", {}).get("userId", "") or "")
 
     async def async_list_devices(self) -> list[dict[str, Any]]:
         """
