@@ -317,10 +317,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             msg = "PowerPulse serial number not found; pass 'sn' explicitly"
             raise HomeAssistantError(msg)
         params = call.data.get("params")
-        return {
-            "sn": sn,
-            "response": await api_entry.async_get_property(sn=sn, params=params),
-        }
+        try:
+            response = await api_entry.async_get_property(sn=sn, params=params)
+        except Exception as err:
+            raise HomeAssistantError(f"ocpp_probe_runtime failed for {sn}: {err}") from err
+        return {"sn": sn, "response": response}
 
     # ── Service: ocpp_disable_backend ─────────────────────────────────────────
     # POSTs the same record with isEnabled=0 (the documented "tidy" path).

@@ -395,10 +395,14 @@ class EcoflowApi:
             f"https://{self.api_host}/iot-devices/device/acquireQuotaAll"
             f"?sn={target_sn}"
         )
-        async with asyncio.timeout(10):
-            async with session.get(get_url, headers=headers) as resp:
-                resp.raise_for_status()
-                return await resp.json()
+        try:
+            async with asyncio.timeout(10):
+                async with session.get(get_url, headers=headers) as resp:
+                    resp.raise_for_status()
+                    return await resp.json()
+        except (TimeoutError, aiohttp.ClientError) as err:
+            msg = f"acquireQuotaAll for {target_sn} failed: {err}"
+            raise EcoflowApiError(msg) from err
 
     async def async_set_property(self, params: dict[str, Any]) -> dict[str, Any]:
         """
